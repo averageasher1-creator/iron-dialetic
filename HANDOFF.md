@@ -295,7 +295,7 @@ writing in big strategy mods. What exists:
 
 ## Published (end of session 2)
 
-- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `1794603075-a610` after session 4,
+- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `1794611680-2300` after session 5,
   published from files (index.html, css, js, fonts). To update after edits, republish with
   `publish_files` using the slug and the live version from `get_artifact`.
 - GitHub Pages zip: `/home/claude/iron-dialectic.zip` (rebuild with the zip command in the session log:
