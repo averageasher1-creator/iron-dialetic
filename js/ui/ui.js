@@ -174,11 +174,12 @@
     world: '<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
     help: '<svg viewBox="0 0 24 24"><path d="M4 4h7v16H4zM13 4h7v16h-7zM6.5 8h2M6.5 12h2M15.5 8h2M15.5 12h2"/></svg>',
     menu: '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+    prog: '<svg viewBox="0 0 24 24"><path d="M5 22V3M5 4h13l-3 4.5 3 4.5H5"/></svg>',
   };
-  const TABS = [['gov', 'State', 'G'], ['eco', 'Economy', 'E'], ['law', 'Laws', 'L'], ['mil', 'War', 'M'], ['for', 'Foreign', 'F'], ['world', 'World', 'O'], ['help', 'Handbook', 'H']];
+  const TABS = [['gov', 'State', 'G'], ['eco', 'Economy', 'E'], ['law', 'Laws', 'L'], ['prog', 'Programme', 'P'], ['mil', 'War', 'M'], ['for', 'Foreign', 'F'], ['world', 'World', 'O'], ['help', 'Handbook', 'H']];
   UI.TABS = TABS;
   UI.renderRail = function () {
-    $('#rail').innerHTML = TABS.map((t) => '<button class="tab' + (UI.tab === t[0] ? ' on' : '') + '" data-act="tab" data-a=\'"' + t[0] + '"\' id="tab-' + t[0] + '"' + tip('<b>' + t[1] + '</b> <span class="dim">(' + t[2] + ')</span>') + '>' + ICON[t[0]] + '<span>' + t[1] + '</span><i class="pip" hidden></i></button>').join('') +
+    $('#rail').innerHTML = TABS.map((t) => '<button class="tab' + (UI.tab === t[0] ? ' on' : '') + '" data-act="tab" data-a=\'"' + t[0] + '"\' id="tab-' + t[0] + '"' + tip('<b>' + t[1] + '</b> <span class="dim">(' + t[2] + ')</span>') + '>' + ICON[t[0]] + '<span>' + t[1] + '</span><i class="pip" hidden></i>' + (t[0] === 'prog' ? '<i class="tprog"><u id="tprog"></u></i>' : '') + '</button>').join('') +
       '<div class="grow"></div><button class="tab" data-act="menu" id="tab-menu"' + tip('<b>Menu</b> <span class="dim">(Esc)</span><br>Save, load, settings, quit.') + '>' + ICON.menu + '<span>Menu</span></button>';
   };
   let topKey = '';
@@ -209,6 +210,7 @@
     set('sv-stab', '<span class="' + cls(n.stab) + '">' + Math.round(clamp(n.stab, 0, 100)) + '</span>' + arrow(n.stab, n.a.stabTgt != null ? n.a.stabTgt : n.stab));
     set('sv-legit', '<span class="' + cls(n.legit) + '">' + Math.round(n.legit) + '</span>' + arrow(n.legit, n.legitRaw != null ? n.legitRaw : n.legit));
     set('sv-auth', Math.round(n.auth) + '');
+    { const tp = document.getElementById('tprog'); if (tp) { const w = n.path && n.path.cur ? (ID.Focus.progress(G, n) * 100).toFixed(1) + '%' : '0%'; if (tp.style.width !== w) tp.style.width = w; } }
     const d = ID.dateOf(G.tick);
     set('sv-date', d.str); set('sv-era', ID.ERAS[ID.eraOf(G.tick)].name);
     const pb = document.getElementById('b-pause'); if (pb) { pb.classList.toggle('on', !!G.paused); const t = G.paused ? '❚❚' : '▶'; if (pb.textContent !== t) pb.textContent = t; }
@@ -234,7 +236,7 @@
   UI.openTab = function (t, keep) {
     if (!keep && t === UI.tab) return;
     UI.tab = t; const d = $('#drawer');
-    d.hidden = !t; $('#modes').classList.toggle('shift', !!t); $('#atkbar').classList.toggle('shift', !!t);
+    d.hidden = !t; $('#modes').classList.toggle('shift', !!t); $('#atkbar').classList.toggle('shift', !!t); $('#alerts').classList.toggle('shift', !!t);
     for (const x of TABS) { const el = document.getElementById('tab-' + x[0]); if (el) el.classList.toggle('on', x[0] === t); }
     if (t) { UI.renderPanel(true); ID.Audio.play('click'); }
   };
@@ -393,6 +395,7 @@
     if (n.a.knownOps) for (const k in n.a.knownOps) if (G.tick - n.a.knownOps[k] < 720 && G.nations[+k].alive) add('<b>' + esc(G.nations[+k].base) + '</b> is funding your opposition', 'for', false, 'focus', +k);
     for (const v of G.votes) if (v.n === n.id) add('<b>' + esc(I.control.body) + '</b> votes ' + ID.dateOf(v.at).short + (v.kind === 'war' ? ' on war with ' + esc(G.nations[v.target].base) : ''), 'gov');
     if (n.auth >= 96) add('<b>Authority</b> is at its ceiling: spend it', 'gov');
+    if (!(n.path && n.path.cur) && ID.Focus.available(G, n).length) add('<b>No programme</b> under way: choose one', 'prog');
     if (n.a.techCost === 0 && ['ind', 'mil', 'agr'].some((k) => n.tech[k] < ID.ERAS[ID.eraOf(G.tick)].techCap)) add('<b>Research</b>: this field is capped, switch focus', 'eco');
     return out.slice(0, 7);
   };
@@ -414,10 +417,10 @@
     const opts = ID.Events.options(G, n, def, e.ctx);
     if (!opts.length) { G.evq.shift(); return; }
     const T = (v) => esc(ID.Events.txt(v, G, n, e.ctx));
-    let h = '<div class="dlg"><div class="dhd"><div class="k">' + (def.sys ? 'URGENT' : 'DISPATCH') + '</div><div class="d">' + ID.dateOf(e.t).str + '</div></div>' + ID.Flags.banner(n, e.id, !!def.sys) + '<div class="dbd"><h2>' + T(def.title) + '</h2><p class="tx">' + T(def.text) + '</p>';
+    let h = '<div class="dlg"><div class="dhd"><div class="k">' + (def.story ? 'HISTORY' : def.sys ? 'URGENT' : 'DISPATCH') + '</div><div class="d">' + ID.dateOf(e.t).str + '</div></div>' + ID.Flags.banner(n, e.id, !!def.sys) + '<div class="dbd"><h2>' + T(def.title) + '</h2><p class="tx">' + T(def.text) + '</p>';
     opts.forEach((o, k) => {
       const fx = typeof o.fx === 'function' ? [] : o.fx;
-      h += '<button class="choice" data-act="choose" data-a="' + k + '"><kbd>' + (k + 1) + '</kbd><b>' + T(o.label) + '</b>' + (o.tip ? '<span class="hint">' + T(o.tip) + '</span>' : '') + '<div class="fx">' + UI.fxHtml(fx, n) + '</div></button>';
+      h += '<button class="choice" data-act="choose" data-a="' + k + '"><kbd>' + (k + 1) + '</kbd><b>' + T(o.label) + (o.hist && G.historical ? ' <span class="tag hist">as it happened</span>' : '') + '</b>' + (o.tip ? '<span class="hint">' + T(o.tip) + '</span>' : '') + '<div class="fx">' + UI.fxHtml(fx, n) + '</div></button>';
     });
     h += '</div></div>';
     if (!G.paused && UI.settings.pauseOnEvent) UI.resumeAfterEvent = false;

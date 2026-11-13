@@ -49,8 +49,10 @@ exists in the sandbox for headless browser checks (use puppeteer-core from npm o
 
 - Plain `<script>` tags, no modules. Every file is an IIFE that hangs things off one global,
   `ID` (`globalThis.ID`). Load order: `core/util` → `data/base` → `data/ideologies` →
-  `data/names` → `data/events` → `sim/mapgen` → `sim/world` → `sim/combat` → `sim/economy` →
-  `sim/politics` → `sim/diplomacy` → `sim/events` → `sim/ai` → `sim/game` → `ui/*`.
+  `data/names` → `data/events` → `data/focus` → `sim/mapgen` → `sim/world` → `sim/combat` →
+  `sim/economy` → `sim/politics` → `sim/diplomacy` → `sim/events` → `sim/focus` → `sim/ai` →
+  `sim/game` → `ui/*` (`ui/programme.js` after `ui/panels.js`). Every tool in `tools/` has its
+  own copy of this list: add new files there too.
 - **`js/sim` and `js/data` never touch the DOM.** The UI reads the game object `G` and calls
   sim functions. Keep it that way so the Node tools keep working.
 - `G` is one plain object made by `ID.newGame(opts)` (`sim/world.js`). `ID.setPlayer(G, id,
@@ -111,7 +113,7 @@ panel · map · selection card top-right · alerts · attack bar bottom-centre �
 switch · news ticker along the bottom. Event "dispatch" modal in the centre.
 
 Keys: Space pause, 1–5 speed, arrows/WASD pan, +/− zoom, G government, E economy, L laws,
-M military, F foreign, O world, H handbook, Z X C V B N map modes (political, ideology,
+P programme, M military, F foreign, O world, H handbook, Z X C V B N map modes (political, ideology,
 opposition, stability, supply, terrain), Esc close.
 
 Map renderer: one offscreen canvas at 1px per tile (ImageData via a Uint32Array), repaint
@@ -185,6 +187,69 @@ alert column (`G.offers`), not dispatches; they lapse after 120 days.
 - Soak after these changes: passive player falls in 10 of 17 starts; AI-played player falls in 6,
   no outright wins. The hinterland makes the opening gentler; if playtesting says it is too easy,
   raise `aiAgg` on Iron or shorten the AI grace period in `ai.js considerWar`.
+
+## Session 4: programmes and historical mode
+
+The user asked for "a toggleable historical mode similar to HOI4's where there's a fixed storyline
+with multiple progression paths for countries". What exists:
+
+- **Programmes (focus trees).** `js/data/focus.js` → `ID.FOCUS = { general, nations: {Base: [...]}}`.
+  24 general programmes for every state (industry, farming, army, state, foreign columns plus three
+  repeatables) and 8–12 national ones for each of the 17 countries of The Two Continents (138 in
+  all). Fields: `{id, name, x, y, days, req, reqAny, excl, year, after, ideos, fams, can, fx, hist,
+  ai, repeat, desc}`. `hist: 1` marks the path taken in history. `after: 'st_x'` makes a programme
+  wait for that story beat, but only in historical mode (used where a programme and a story event
+  would otherwise collide, e.g. Cassine's New Deal waits for the 1932 election).
+- **Engine** `js/sim/focus.js`: `ID.Focus` (`trees`, `block`, `state`, `available`, `start`,
+  `cancel`, `tick` every 5 days, `complete`, `aiPick` monthly from `AI.month`, `progress`,
+  `current`). State per nation: `n.path = {cur, start, end, done: {id: tick}}`; `n.tree` = the
+  national tree key (set in `newGame` for scenario nations; rebels inherit it). One programme at a
+  time. Ideology-changing programmes are blocked during a civil war.
+- **New effect vocabulary** (handled by `ID.Focus.FX` / `ID.Focus.DESC`, reached from the default
+  branch of `Events.applyFx` / `describe`, so events and decisions can use them too):
+  `['ideology', id, mode]`, `['claim', Base]`, `['claimsAll']`, `['war', Base, cb]`,
+  `['ally', Base]`, `['op', Base, v]`, `['build', B.TYPE, k]`, `['techUp', 'ind'|'mil'|'agr']`,
+  `['law', cat, opt]`, `['subvert', Base, v]`, `['civilwar', ideo, share]`, `['protector']`.
+  Countries are named by base name and resolved with `ID.byBase(G, base)` (the lawful government
+  over rebels, then the largest).
+- **Storyline** `ID.STORY` (25 beats, 1911–1973) at the bottom of `data/focus.js`. A beat with
+  `nation` queues the story event of the same id to that country (`sys: 1, story: 1`, options
+  with `hist: 1`); a beat with `run(G)` is a world beat. Helpers: `ID.storyWar` (asks the player
+  through the `story_war` dispatch instead of declaring for them), `ID.storyBloc`, `ID.storyPeace`
+  (offers peace to the player instead of forcing it), `ID.storyUnion` / `ID.storyAnnex`
+  (Hesperia–Pavon; the `st_ultimatum` dispatch if the player is the target). `ID.Story.month`
+  runs from `Game.month` and only when `G.historical`; `ID.Story.upcoming`, `.past`, `.init`.
+  `G.story.done[id]` is 1 when fired, 2 when skipped because its condition failed, 3 when it
+  falls before the campaign's start date.
+- **Historical mode** (`G.historical`, meridia only, saved and loaded): story beats fire; AI
+  countries take `hist` options of story events (`Events.auto`) and weight `hist` national
+  programmes 40 and non-historical ones 0; the Slump is fixed at October 1929; before 1939 AI war
+  scores take −0.45 and AI states cannot found new blocs (`ai.js`). Free mode: no story, AI picks
+  programmes freely (war and ideology programmes weighted down).
+- **UI**: setup screen History toggle (Historical / Free, default Historical, hidden for random
+  worlds and challenges); `Programme` rail tab (key P) with a red progress strip; panel
+  `ID.Panels.prog` and the tree modal (kind `'tree'`, `UI.renderTree`, `acts.tree`,
+  `acts.startFocus`, `acts.cancelFocus`) in `js/ui/programme.js`; "No programme" alert; story
+  dispatches are labelled HISTORY and their historical option is tagged "as it happened";
+  Handbook page "Programmes and history"; World panel shows the mode. Alerts move up above the
+  attack bar while a drawer is open (`#alerts.shift`).
+- **Tools**: `node tools/history.js --runs 3 [--free] [--verbose] [--start 1925]` runs The Two
+  Continents headless and prints which beats fired, which programmes each country completed,
+  and the final regimes. `node tools/soak.js meridia iron [auto] [hist]`. Browser check:
+  `/home/claude/scripts/hist.js`.
+
+- **Balance notes (session 4).** The first version of the general tree made AI worlds much calmer
+  (random maps: wars 28 → 19, civil wars 8 → 5.6 on the same nine seeds) because it handed every
+  state free factories, technology levels, missile silos and permanent stability. Now general
+  programmes trade off (gold costs, faction costs, temporary rather than permanent stability, research
+  points instead of free tech levels, no free silos) and the same seeds give about 23 wars and 6–8
+  civil wars. `node tools/simulate.js --nofocus` turns AI programmes off for comparison; seed-to-seed
+  variance is large (4–49 wars), so compare at least nine runs. Historical mode on The Two
+  Continents is busier than free mode (25–45 wars, many civil wars after 1950 in the east); that is
+  intended. Soak with the AI playing the player's nation: free mode 10 of 17 fall, historical 9 of
+  17 fall and Antara reached its objective in 1924. A passive player (no programmes, no levers)
+  now falls in 16 of 17 starts, because every AI state develops through its programmes. AI gold
+  hoarding got worse with programme income (thousands by the 1950s); still on the soft-spot list.
 
 ## Published (end of session 2)
 

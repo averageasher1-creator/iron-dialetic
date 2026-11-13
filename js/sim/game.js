@@ -178,6 +178,7 @@
     for (const n of ns) if (n.alive) { ID.Diplomacy.opsMonth(G, n); ID.Events.month(G, n); }
     ID.Diplomacy.month(G);
     for (const n of ns) if (n.alive && (n.ai || G.autoPlayer)) ID.AI.month(G, n);
+    ID.Story.month(G);
     ID.Combat.tickRadiation(G);
     if (G.offers && G.offers.length) G.offers = G.offers.filter((o) => o.until > G.tick && G.nations[o.from].alive && (o.kind === 'peace') === ID.atWar(G, o.from, G.player));
     Gm.updateStats(G);
@@ -199,6 +200,7 @@
     for (let i = 1; i < ns.length; i++) { const n = ns[i]; if (n.alive) ID.Combat.tickPop(G, n); }
     ID.Politics.tickVotes(G);
     if ((G.tick & 3) === 0) for (let i = 1; i < ns.length; i++) { const n = ns[i]; if (n.alive && n.nwars && (n.ai || G.autoPlayer)) ID.AI.war(G, n); }
+    if (G.tick % 5 === 0) ID.Focus.tick(G);
     if (G.tick % 30 === 0) Gm.month(G);
   };
 
@@ -215,7 +217,7 @@
       prov: G.provinces.slice(1).map((P) => [P.core, Math.round(P.unrest * 10) / 10, P.opp, Math.round(P.oppStr * 10) / 10, Math.round(P.integ), P.lastOwner, P.sponsor]),
       attacks: G.attacks.map((a) => ({ id: a.id, from: a.from, to: a.to, troops: a.troops, committed: a.committed, style: a.style, amphib: a.amphib, taken: a.taken })),
       boats: G.boats, missiles: G.missiles, builds: G.builds, dip: G.dip, blocs: G.blocs, news: G.news.slice(-60), chronicle: G.chronicle, world: G.world, flags: G.flags,
-      evq: G.evq, votes: G.votes, nextId: G.nextId, over: G.over, tut: G.tut, offers: G.offers || [], shock: G.shock || [],
+      evq: G.evq, votes: G.votes, nextId: G.nextId, over: G.over, tut: G.tut, offers: G.offers || [], shock: G.shock || [], historical: !!G.historical, story: G.story || null,
     };
     return JSON.stringify(o, (k, v) => (k === 'dem' || k === 'lsHist' ? undefined : typeof v === 'number' && !Number.isInteger(v) ? Math.round(v * 1000) / 1000 : v));
   };
@@ -234,6 +236,8 @@
       flags: o.flags || {}, dirty: [], dirtyAll: true, radList: [], mapMode: 'political', fx: [], sfx: [], capLost: [], evq: o.evq || [], votes: o.votes || [], over: o.over || null, nextId: o.nextId || 1, fortsDirty: true, tut: o.tut || null, offers: o.offers || [], shock: o.shock || [],
     };
     G.rng.s = o.rng >>> 0;
+    G.historical = !!o.historical; G.story = o.story || null; if (G.historical && !G.story) ID.Story.init(G);
+    if (sc) for (const n of G.nations) if (n && !n.tree && !n.civilOf && ID.FOCUS.nations[n.base]) n.tree = n.base; // saves from before programmes existed
     unrle(o.owner, G.owner); unrle(o.bld, G.bld);
     for (const [i, v] of o.rad || []) { G.rad[i] = v; G.radList.push(i); }
     for (let p = 1; p < G.provinces.length; p++) {

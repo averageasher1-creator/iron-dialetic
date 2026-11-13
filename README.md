@@ -32,7 +32,7 @@ Everything works with a trackpad. Nothing needs a right-click.
 | Attack the selected enemy, or expand into selected hinterland | `Enter`, the Attack/Expand button, or double-click |
 | Artillery barrage / air raid | click the order on the war bar, then click enemy land (`Esc` cancels) |
 | Pause / speed | `Space` / `1`–`5` |
-| Panels | `G` state · `E` economy · `L` laws · `M` war · `F` foreign · `O` world · `H` handbook |
+| Panels | `G` state · `E` economy · `L` laws · `P` programme · `M` war · `F` foreign · `O` world · `H` handbook |
 | Map modes | `Z` political · `X` ideology · `C` opposition · `V` unrest · `B` supply · `N` terrain |
 | Close / menu | `Esc` |
 | Answer a dispatch | click an option, or press its number |
@@ -50,6 +50,14 @@ machine, change it in **Settings**.
   visible, itemised demands. Censorship makes the numbers you see lie.
 - **Regime change**: elections, coups, uprisings, reforms, drift and imposed regimes. Civil
   wars split the map along the provinces where the rebels are strong, and you choose a side.
+- **Historical mode** on *The Two Continents*: a storyline runs from 1910 to 1976 (a great war,
+  revolutions, the Slump of October 1929, a second war, the blocs, a crisis over the straits).
+  Other countries follow the paths they took in history. When history reaches your country you
+  choose, and the option history took is marked. Turn it off for a world with no script.
+- **Programmes**: every state works through long projects that pay out when they finish. Each of
+  the 17 countries of *The Two Continents* has its own branching tree, with paths that rule each
+  other out, change the system of government or start wars; every state shares a general tree
+  for industry, farming, the army, the state and foreign policy.
 - **A land race from the first day**: about a quarter of the world starts as unclaimed
   hinterland. Every state pushes into it with troops, no war needed, until the borders close.
 - **OpenFront-style war**: fronts advance tile by tile by troop density, terrain, rivers and
@@ -86,10 +94,13 @@ node tools/simulate.js --runs 5 --years 66      # AI-vs-AI campaigns with a summ
 node tools/soak.js meridia iron                 # how long a passive human lasts in each nation
 node tools/soak.js meridia iron auto            # the same with the AI playing your nation
 node tools/budget.js                            # every nation's treasury on default settings
+node tools/history.js --runs 3 --verbose        # The Two Continents in historical mode: beats, programmes, regimes
+node tools/history.js --runs 3 --free           # the same world with no storyline
 ```
 
-Ideologies and events are plain data: add an ideology by adding one object to
-`js/data/ideologies.js`, an event by adding one object to `js/data/events.js`. `DESIGN.md`
+Ideologies, events, programmes and the storyline are plain data: add an ideology by adding one
+object to `js/data/ideologies.js`, an event to `js/data/events.js`, a programme or a story beat
+to `js/data/focus.js`. `DESIGN.md`
 describes the systems and the data schema.
 
 ## Credits

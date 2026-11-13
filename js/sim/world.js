@@ -30,7 +30,7 @@
       mandate: 55, fervor: 15, tradition: 40, glory: 30, discipline: 60, particip: 45, charisma: 50,
       bureau: 15, corr: 15, grievance: 5, we: 0, prestige: 10,
       leader: null, laws: {}, drift: {}, mods: [], flags: {}, cd: {}, cnt: {}, threat: 0, ops: [], claims: [],
-      startTiles: 0, peakTiles: 0, age: 0, trans: 0, electionAt: 0, nwars: 0, crises: 0, emergency: false, isolated: false, lostWarAt: null,
+      path: { cur: null, start: 0, end: 0, done: {} }, tree: null, startTiles: 0, peakTiles: 0, age: 0, trans: 0, electionAt: 0, nwars: 0, crises: 0, emergency: false, isolated: false, lostWarAt: null,
       log: [], coupRisk: 0, kills: 0, losses: 0, casM: 0, sciTotal: 0, civil: 0, civilOf: 0, sponsor: 0, gdppc: 16, bloc: 0, strike: 0, zeroStab: 0, motions: 0, a: {},
     };
     for (const f of ID.FACTION_IDS) { n.fs[f] = 50; n.fp[f] = 100 / 7; n.sm[f] = 0; n.rep[f] = 50; }
@@ -414,6 +414,7 @@
       if (startYear >= 1940) { n.tech.ind = 3; n.tech.mil = 3; n.tech.agr = 2; n.mob = Math.min(ID.maxMob(n), n.mob * 1.8); n.troops = n.pop * n.mob; }
       n.startTiles = n.peakTiles = n.tiles;
       n.blurb = d.blurb || ''; n.tutorial = !!d.tutorial;
+      if (sc && ID.FOCUS.nations[d.base]) n.tree = d.base;
       if (I.flags.succession) n.leader.age = rng.int(40, 66);
     });
 
@@ -451,6 +452,8 @@
     G.era = ID.eraOf(G.tick); G.startTick = G.tick;
     for (const n of nats) n.a.startIdeo = n.ideo;
     G.world.depressionAt = (rng.int(1927, 1933) - ID.START_YEAR) * 360 + rng.int(0, 359);
+    G.historical = !!(opts.historical && sc && sc.id === 'meridia');
+    if (G.historical) { G.world.depressionAt = (1929 - ID.START_YEAR) * 360 + 9 * 30; ID.Story.init(G); }
     ID.chron(G, 'world', 'The year ' + startYear + '. ' + nats.length + ' states divide the world between them.');
     return G;
   };

@@ -323,3 +323,45 @@ ul.plus li::marker { content: "+  "; color: var(--olive); font-weight: 700; } ul
 @media (max-width: 1020px) { .st.opt1 { display: none; } #top .who b { max-width: 180px; } }
 @media (max-height: 720px) { .tab { height: 50px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------------------------------------------------------------- programmes and history */
+.tag.hist { background: var(--ochre); color: var(--ink); font-weight: 700; }
+.tab .tprog { position: absolute; left: 9px; right: 9px; bottom: 5px; height: 3px; background: rgba(235, 226, 204, 0.22); }
+.tab .tprog u { display: block; height: 100%; width: 0; background: var(--red); transition: width 0.4s linear; }
+.tab.on .tprog { background: var(--paper3); }
+.dlg .dhd .x { width: 46px; flex: none; background: transparent; border: 0; color: var(--paper); font: 700 22px var(--cond); cursor: pointer; }
+.dlg .dhd .x:hover { background: var(--red); }
+.foc-cur { border: 3px solid var(--red); padding: 9px 11px 10px; box-shadow: 5px 5px 0 var(--ink); background: var(--paper); }
+.foc-cur h4 { font: 700 20px/1.1 var(--cond); letter-spacing: 0.01em; margin-bottom: 3px; }
+.foc-cur p { font-size: 13.5px; color: var(--ink2); margin-bottom: 7px; }
+.fxl { display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 13.5px; font-weight: 600; margin-top: 6px; }
+.chron.hist .mine { font-weight: 700; } .chron.hist .mine span:first-child { color: var(--red); }
+.dlg.tree { width: 1300px; }
+.tree .tscroll { overflow: auto; max-height: calc(100vh - 230px); border: 2px solid var(--ink); background-color: var(--paper2);
+  background-image: linear-gradient(rgba(58, 53, 43, 0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(58, 53, 43, 0.09) 1px, transparent 1px); background-size: 26px 26px; scrollbar-width: thin; }
+.tree .tcanvas { position: relative; }
+.tree .tcanvas svg { position: absolute; left: 0; top: 0; pointer-events: none; }
+.tree .ln { stroke: var(--ink3); stroke-width: 2; fill: none; }
+.tree .ln.dn { stroke: var(--ink); stroke-width: 3.5; }
+.tree .ln.any { stroke-dasharray: 6 4; }
+.tree .ex { stroke: var(--red); stroke-width: 2.5; stroke-dasharray: 2 4; fill: none; }
+.tree .exb { fill: var(--paper); stroke: var(--red); stroke-width: 2; }
+.tree .ext { font: 700 14px var(--cond); fill: var(--red); letter-spacing: 0.04em; }
+.fn { position: absolute; display: flex; flex-direction: column; justify-content: space-between; text-align: left; padding: 6px 9px 7px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); cursor: default; overflow: hidden; }
+.fn b { font: 700 16px/1.08 var(--cond); letter-spacing: 0.01em; }
+.fn small { font: 600 12.5px/1.2 var(--body); color: var(--ink3); }
+.fn.avail { box-shadow: 4px 4px 0 var(--ink); }
+.fn.go { cursor: pointer; }
+.fn.go:hover { background: var(--ink); color: var(--paper); box-shadow: 4px 4px 0 var(--red); } .fn.go:hover small { color: rgba(235, 226, 204, 0.8); }
+.fn.cur { border: 3px solid var(--red); box-shadow: 4px 4px 0 var(--red); }
+.fn.cur small { color: var(--red2); }
+.fn .pg { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--red); }
+.fn.done { background: var(--ink); color: var(--paper); } .fn.done small { color: rgba(235, 226, 204, 0.7); }
+.fn.locked { background: var(--paper2); border-style: dashed; color: var(--ink2); }
+.fn.excl { background: transparent; border: 2px dashed var(--ink3); color: var(--ink3); opacity: 0.6; } .fn.excl b { text-decoration: line-through; }
+.fn.h::after { content: ""; position: absolute; top: 0; right: 0; border-top: 18px solid var(--ochre); border-left: 18px solid transparent; }
+.tlg { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 13px; color: var(--ink2); }
+.tlg .fn { position: relative; display: inline-block; width: 18px; height: 13px; padding: 0; margin-left: 8px; box-shadow: none; opacity: 1; }
+.tlg .fn.h::after { border-top-width: 8px; border-left-width: 8px; }
+/* with the drawer open there is no room for the attack bar and the alerts side by side */
+@media (max-width: 1760px) { #alerts.shift { bottom: calc(var(--tick) + 152px); } }

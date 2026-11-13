@@ -15,6 +15,7 @@
     { title: 'Where legitimacy comes from', hl: '#drawer .sec', text: 'A liberal republic justifies itself by elections and prosperity. Lose the vote and the opposition takes office: the country changes system and you go on playing it. Other ideologies lean on fervour, tradition, faith, victory or the Leader.', do: 'Read the Drift section below it: every regime slides toward something else.', next: true },
     { title: 'The economy is the ideology', hl: '#tab-eco', text: 'Cassine runs a market economy: you set a tax rate and private capital builds factories on its own when it is confident. A planned economy, a workers’ council or a corporatist pact would give you completely different levers.', do: 'Open the Economy panel (E).', done: () => UI.tab === 'eco' },
     { title: 'Laws', hl: '#tab-law', text: 'Laws on the press, police, land, labour, faith, trade and war each shift who supports you. Your parliament must vote for them, and censorship would also start hiding the true numbers from you.', do: 'Open the Laws panel (L), then hover a few options.', done: () => UI.tab === 'law' },
+    { title: 'A programme', hl: '#tab-prog', text: 'Every state works through programmes: long projects that take months and then pay out. Cassine has its own, from the Exchange to a New Deal, and every state shares a general one for industry, farming, the army and the state. One runs at a time.', do: 'Open the Programme panel (P) and start one.', done: (G) => !!(G.nations[G.player].path && G.nations[G.player].path.cur) },
     { title: 'The hinterland', hl: '#b-expand', text: 'The pale, hatched land on the map belongs to no one. Every state is racing to claim it before the borders close. It costs troops, not a war, and every tile you take raises your population ceiling.', do: 'Close the panel (Esc), set Commit to about 30%, and press Expand on the bar at the bottom.', done: (G) => G.attacks.some((a) => a.from === G.player && a.to === 0) },
     { title: 'Start the clock', hl: '#b-pause', text: 'Time runs in days. Speeds 1 to 5; Space pauses. Dispatches will stop the clock when a decision is needed. Watch your columns push into the hinterland.', do: 'Press Space.', done: (G) => !G.paused },
     { title: 'Watch the frontier', hl: '#alerts', text: 'Alerts collect at the lower right. Click one to jump to the problem. Your neighbours have their own systems and their own ambitions.', do: 'Let a few months pass.', done: (G) => G.tut.war > 0 },
@@ -51,7 +52,7 @@
   Tu.frame = function (G, dt) {
     if (!G.tut) return;
     const st = STEPS[G.tut.step]; if (!st) { G.tut = null; $('#coach').hidden = true; clearHl(); return; }
-    if (G.tut.step >= 9 && !G.tut.war && G.tick - G.tut.t0 > 150) provokeWar(G);
+    if (G.tut.step >= 10 && !G.tut.war && G.tick - G.tut.t0 > 150) provokeWar(G);
     if (st.done && st.done(G)) { G.tut.step++; ID.Audio.play('good'); render(G); return; }
     if (lastStep !== G.tut.step || $('#coach').hidden) render(G);
     hlAt += dt;

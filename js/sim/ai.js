@@ -178,7 +178,7 @@
         if (s > bs) { bs = s; best = L; }
       }
       if (best && rng.chance(0.5)) proposeTo(G, n, best, 'ally');
-      else if (!best && (ID.rankOf(G, n, 'power') <= 4 || n.a.threatened) && rng.chance(0.35)) {
+      else if (!best && !(G.historical && ID.yearOf(G.tick) < 1939) && (ID.rankOf(G, n, 'power') <= 4 || n.a.threatened) && rng.chance(0.35)) {
         const c = ns.filter((o) => o !== n && !o.bloc && !ID.areRivals(n.ideo, o.ideo) && ID.ideoAffinity(n.ideo, o.ideo) > 8 && ID.op(G, o.id, n.id) > 25);
         if (c.length) proposeTo(G, n, rng.pick(c), 'ally');
       }
@@ -285,6 +285,7 @@
       if (!ID.borders(G, n.id, o.id)) s -= 0.7;
       if (o.id === G.player) s = s * diffA + (diffA - 1) * 0.3;
       if (o.nukes > 0 && n.nukes === 0) s -= 0.5;
+      if (G.historical && ID.yearOf(G.tick) < 1939) s -= 0.45;
       if (s > bs) { bs = s; best = o; bcb = cb; }
     }
     if (best && rng.chance(Math.min(0.5, bs * 0.55))) Dp.declare(G, n, best);
@@ -386,6 +387,7 @@
     budget(G, n);
     mobilise(G, n);
     research(G, n);
+    ID.Focus.aiPick(G, n);
     const phase = (Math.floor(G.tick / 30) + n.id) % 3;
     if (phase === 0) build(G, n);
     else if (phase === 1) diplomacy(G, n);

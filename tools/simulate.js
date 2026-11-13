@@ -1,14 +1,15 @@
 /* Headless AI-vs-AI campaigns for balance testing.
-   node tools/simulate.js [--runs 6] [--seed 1] [--scenario meridia|random] [--size std] [--years 66] [--verbose] */
+   node tools/simulate.js [--runs 6] [--seed 1] [--scenario meridia|random] [--size std] [--years 66] [--verbose] [--nofocus] */
 'use strict';
 const path = require('path');
 const root = path.join(__dirname, '..', 'js');
 globalThis.ID = {};
-for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
+for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/focus', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
 const ID = globalThis.ID;
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i >= 0 ? process.argv[i + 1] : d; };
 const runs = +arg('runs', 4), seed0 = +arg('seed', 1), years = +arg('years', 66), scenario = arg('scenario', 'random'), size = arg('size', 'std');
 const verbose = process.argv.includes('--verbose');
+if (process.argv.includes('--nofocus')) ID.Focus.aiPick = () => {}; // compare against a world without programmes
 const agg = { ideoYears: {}, ideoStart: {}, ideoEnd: {}, falls: {}, changes: {}, wars: 0, civil: 0, conquest: 0, topShare: [], alive: [], dom: 0, ms: [] };
 for (let r = 0; r < runs; r++) {
   const t0 = Date.now();

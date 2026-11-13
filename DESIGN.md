@@ -62,6 +62,26 @@ leaves the area "shaken" so attacks there cost 40% less), air raid (military tec
 range, can destroy factories, cities and ports), and calling up the reserves (instant 2% of the
 population beyond the ceiling, at a cost in support, weariness and equipment).
 
+### Programmes and historical mode (added in session 4)
+A **programme** is a long project (75–140 days) that pays out when it finishes; one runs at a
+time. Every state shares a general tree (industry, agriculture, army, state, foreign policy and
+three repeatable campaigns). On *The Two Continents* each country also has a national tree of 8–12
+programmes whose branches are real political choices: some rule each other out ("Strengthen the
+Okhrana" or "The October Manifesto"), some change the system of government, some claim land or
+start wars. Ideological programmes are what make a country's trajectory a choice rather than
+only a drift.
+
+**Historical mode** (a setup toggle, on by default for The Two Continents) adds a storyline of 25
+dated beats from 1911 to 1973. World beats act directly (the Steel Accord forms, the great war
+breaks out, the armistice, the atomic test, the iron curtain); nation beats are dispatches to one
+country (the February days in Aurelia, the Fourteenth Congress in Karsova, the generals' rising
+in Verano). AI countries take the option history took and follow their historical programmes;
+the player chooses freely, and the historical option is marked "as it happened". Every beat has a
+condition, so once the world diverges the script adapts or skips what no longer fits. When a world
+beat would make the player's country declare war, the player gets the choice instead; when it
+would force the player into peace or an alliance, it arrives as an offer. Before 1939 AI states
+start fewer wars of their own and found no new blocs, so the great wars come from the script.
+
 ### Combat in five sentences
 Troops are a share of your population set by the mobilisation slider; soldiers are not
 workers. To attack, pick a neighbour you are at war with, set the commit slider, choose a
@@ -138,9 +158,15 @@ faction  = { id, name, icon, powerFrom(n), demands: [{ id, label, value(n) }], t
 law      = { cat, id, name, desc, effects... }
 building = { id, name, cost, upkeep, desc, needs }
 decision = { id, name, desc, cost: {auth, gold}, cooldown, vote, can(n, G), effects: [...] }
-event    = { id, title, text, weight(n, G), once, options: [{ label, tip, effects, ai }] }
+event    = { id, title, text, weight(n, G), once, options: [{ label, tip, effects, ai, hist }] }
 effect   = ['stab', -5] | ['sup', 'workers', +10] | ['mod', 'prod', -0.2, 12, 'Strike']
          | ['later', 6, 'eventId'] | ['drift', 'ml', +15] | ['flag', 'x'] | ...
+         | ['ideology', 'socdem', 'reform'] | ['claim', 'Drava'] | ['war', 'Verano', 'claims']
+         | ['ally', 'Norvik'] | ['build', B.FACTORY, 2] | ['techUp', 'mil'] | ['law', 'land', 'commune']
+         | ['subvert', 'Suyan', 15] | ['civilwar', 'council', 0.42] | ['protector']
+programme = { id, name, x, y, days, req: [id], reqAny: [id], excl: [id], year, after: storyBeatId,
+              ideos: [ideologyId], can(n, G), fx: [effect], hist, repeat: years, desc }
+storyBeat = { id, date: [year, month], cond(G), nation: base } | { id, date, cond(G), title, run(G) }
 ```
 
 Adding an ideology is one object in `ideologies.js`; adding an event is one object in
@@ -173,17 +199,20 @@ index.html            no build step; plain <script> tags, one global `ID`
 css/style.css         the whole interface
 fonts/                Barlow + Barlow Condensed (OFL)
 js/core/util.js       RNG, noise, heap, formatting, calendar
-js/data/*.js          base (terrain, laws, buildings...), ideologies, names + scenario, events + decisions
-js/sim/*.js           mapgen, world, combat, economy, politics, diplomacy, events, ai, game (loop, victory, saves)
+js/data/*.js          base (terrain, laws, buildings...), ideologies, names + scenario, events + decisions,
+                      focus (programme trees and the historical storyline)
+js/sim/*.js           mapgen, world, combat, economy, politics, diplomacy, events, focus (programmes and
+                      storyline engine), ai, game (loop, victory, saves)
 js/ui/render.js       canvas map: 1px-per-tile offscreen image, dirty-tile repaint, vector overlays
 js/ui/audio.js        synthesised sound cues and the generative score (ID.Music)
 js/ui/flags.js        procedural flags, ideology emblems, dispatch poster banners
 js/ui/ui.js           top band, rail, selection card, attack bar, alerts, offers, dispatches, tooltips, keys
 js/ui/panels.js       State, Economy, Laws, War, Foreign, World, Handbook
+js/ui/programme.js    Programme panel, the programme tree, history timeline, handbook page
 js/ui/screens.js      title, campaign setup, saves, settings, challenges, records, post-mortem, chronicle
 js/ui/tutorial.js     guided first campaign as Cassine
 js/ui/main.js         boot, main loop, pointer and wheel input
-tools/                simulate.js, soak.js, budget.js, probe.js, fates.js (headless, Node)
+tools/                simulate.js, soak.js, budget.js, probe.js, fates.js, history.js (headless, Node)
 ```
 
 The `sim` layer never touches the DOM, so whole campaigns run in Node for balance testing.

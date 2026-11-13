@@ -324,7 +324,7 @@
     const col = I.color.map((c, k) => clamp(Math.round(c * 0.75 + n.color[k] * 0.25 + 18), 0, 255));
     const R = ID.makeNation(G, { base: n.base, adj: n.adj, color: col, sit: 'revolution' });
     if (!R) return;
-    R.civilOf = n.id; n.civil = R.id;
+    R.civilOf = n.id; n.civil = R.id; R.tree = n.tree || null;
     const before = n.tiles;
     const popBefore = n.pop, landBefore = Math.max(1, n.popLand);
     for (let i = 0; i < G.N; i++) if (G.owner[i] === n.id && set.has(G.prov[i])) ID.setOwner(G, i, R.id);
