@@ -44,6 +44,7 @@
     const I = ID.IDEOLOGIES[ideoId];
     n.ideo = ideoId;
     n.name = ID.nationTitle(n, ideoId);
+    if (n.destiny && !n.destiny.lapsed) { if (n.destiny.ideo === ideoId) n.name = n.destiny.name; else n.destiny.lapsed = true; } // a destiny's name and flag belong to the regime that reached it
     for (const c of ID.LAW_CATS) {
       const allowed = c === 'mobil' ? ['peace', 'partial', 'total'] : I.laws[c];
       if (!n.laws[c] || allowed.indexOf(n.laws[c]) < 0) n.laws[c] = c === 'mobil' ? 'peace' : I.lawDef[c];
@@ -451,6 +452,7 @@
     for (const n of nats) { n.ls = 50; ID.Economy.month(G, n); n.gold = n.gold - n.net; n.debt = 0; n.sci = 0; n.lsPrev = n.ls; n.a.lsHist = []; n.a.gdpHist = []; ID.Politics.initNation(G, n); }
     G.era = ID.eraOf(G.tick); G.startTick = G.tick;
     for (const n of nats) n.a.startIdeo = n.ideo;
+    if (sc) for (const n of nats) ID.Focus.applySpirits(G, n);
     G.world.depressionAt = (rng.int(1927, 1933) - ID.START_YEAR) * 360 + rng.int(0, 359);
     G.historical = !!(opts.historical && sc && sc.id === 'meridia');
     if (G.historical) { G.world.depressionAt = (1929 - ID.START_YEAR) * 360 + 9 * 30; ID.Story.init(G); }

@@ -40,8 +40,32 @@
   const dark = (c, k) => c.map((v) => v * k);
   const cache = {};
   /* SVG markup of a nation's flag (30×20). */
+  /* A destiny flag: { p, a, b, c, e, ef } (see data/destiny.js). */
+  function destFlag(d) {
+    const a = d.a, b = d.b || PAPER, c = d.c || a, ef = d.ef || b;
+    let body = '', tr = 'translate(9.5 4.5) scale(0.55)';
+    switch (d.p) {
+      case 'hband': body = '<rect width="30" height="20" fill="' + a + '"/><rect y="6.67" width="30" height="6.67" fill="' + b + '"/>'; tr = 'translate(12.2 7.2) scale(0.28)'; break;
+      case 'vtri': body = '<rect width="10" height="20" fill="' + a + '"/><rect x="10" width="10" height="20" fill="' + b + '"/><rect x="20" width="10" height="20" fill="' + c + '"/>'; break;
+      case 'bicol': body = '<rect width="30" height="10" fill="' + a + '"/><rect y="10" width="30" height="10" fill="' + b + '"/>'; tr = 'translate(3 5) scale(0.5)'; break;
+      case 'canton': body = '<rect width="30" height="20" fill="' + a + '"/>'; tr = 'translate(2 1.5) scale(0.42)'; break;
+      case 'stripes': for (let k = 0; k < 7; k++) body += '<rect y="' + (k * 20 / 7).toFixed(2) + '" width="30" height="' + (20 / 7 + 0.05).toFixed(2) + '" fill="' + (k % 2 ? b : a) + '"/>'; body += '<rect width="13" height="11.43" fill="' + c + '"/>'; tr = 'translate(1.6 0.9) scale(0.5)'; break;
+      case 'cross': body = '<rect width="30" height="20" fill="' + a + '"/><rect x="8" width="5" height="20" fill="' + b + '"/><rect y="7.5" width="30" height="5" fill="' + b + '"/>' + (d.c ? '<rect x="9.4" width="2.2" height="20" fill="' + d.c + '"/><rect y="8.9" width="30" height="2.2" fill="' + d.c + '"/>' : ''); tr = 'translate(20 5) scale(0.5)'; break;
+      case 'diag': body = '<path d="M0 0H30L0 20Z" fill="' + a + '"/><path d="M30 0V20H0Z" fill="' + b + '"/>'; break;
+      case 'sunburst': body = '<rect width="30" height="20" fill="' + a + '"/>'; for (let k = 0; k < 16; k += 2) { const a0 = (k / 16) * Math.PI * 2, a1 = ((k + 1) / 16) * Math.PI * 2; body += '<path d="M15 10L' + (15 + Math.cos(a0) * 30).toFixed(1) + ' ' + (10 + Math.sin(a0) * 30).toFixed(1) + 'L' + (15 + Math.cos(a1) * 30).toFixed(1) + ' ' + (10 + Math.sin(a1) * 30).toFixed(1) + 'Z" fill="' + b + '"/>'; } body += '<circle cx="15" cy="10" r="6" fill="' + a + '"/>'; tr = 'translate(10 5) scale(0.5)'; break;
+      case 'border': body = '<rect width="30" height="20" fill="' + b + '"/><rect x="2.4" y="2.4" width="25.2" height="15.2" fill="' + a + '"/>'; break;
+      case 'chevron': body = '<rect width="30" height="20" fill="' + a + '"/><path d="M0 0L13 10 0 20Z" fill="' + b + '"/>'; tr = 'translate(0.8 5.2) scale(0.48)'; break;
+      case 'saltire': body = '<rect width="30" height="20" fill="' + a + '"/><path d="M0 0L30 20M30 0L0 20" stroke="' + b + '" stroke-width="3.4"/>'; tr = 'translate(10 5) scale(0.5)'; break;
+      default: body = '<rect width="30" height="20" fill="' + a + '"/>';
+    }
+    let e = '';
+    if (d.e && EMB[d.e]) e = '<g transform="' + tr + '" fill="' + ef + '" stroke="' + ef + '" style="--bg:' + (d.p === 'canton' || d.p === 'stripes' ? c : a) + '">' + EMB[d.e]() + '</g>';
+    return '<svg viewBox="0 0 30 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' + body + e + '<rect width="30" height="20" fill="none" stroke="' + INK + '" stroke-width="1"/></svg>';
+  }
+  const fkey = (n) => n.id + ':' + n.ideo + ':' + n.base + (n.destiny && !n.destiny.lapsed ? ':' + n.destiny.id : '');
   F.svg = function (n, w) {
-    const key = n.id + ':' + n.ideo + ':' + n.base;
+    const key = fkey(n);
+    if (!cache[key] && n.destiny && !n.destiny.lapsed && n.destiny.flag) cache[key] = destFlag(n.destiny.flag);
     if (!cache[key]) {
       const I = ID.IDEOLOGIES[n.ideo], h = ID.hashStr(n.base);
       const c1 = hex(n.color), c2 = hex(I.color), c3 = lum(n.color) > 150 ? INK : PAPER;
@@ -72,11 +96,12 @@
   /* An Image of the flag for the canvas (async; returns null until loaded). */
   const imgs = {};
   F.img = function (n) {
-    const key = n.id + ':' + n.ideo + ':' + n.base;
+    const key = fkey(n);
     let im = imgs[key];
     if (!im) {
       im = imgs[key] = new Image();
-      im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(F.svg(n).replace(/var\(--bg\)/g, hex(n.color)));
+      const bg = n.destiny && !n.destiny.lapsed && n.destiny.flag ? (n.destiny.flag.p === 'canton' || n.destiny.flag.p === 'stripes' ? n.destiny.flag.c || n.destiny.flag.a : n.destiny.flag.a) : hex(n.color);
+      im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(F.svg(n).replace(/var\(--bg\)/g, bg));
     }
     return im.complete && im.naturalWidth ? im : null;
   };

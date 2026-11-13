@@ -251,6 +251,48 @@ with multiple progression paths for countries". What exists:
   now falls in 16 of 17 starts, because every AI state develops through its programmes. AI gold
   hoarding got worse with programme income (thousands by the 1950s); still on the soft-spot list.
 
+## Session 5: destinies, identity, family trees
+
+The user asked for more branching paths, more countries with content, and for players to feel
+connected to their country ("think it's awesome"). They clarified: no export or edit tools; make the
+game itself worth making edits about, with narrative lines and slogans in the spirit of the memorable
+writing in big strategy mods. What exists:
+
+- **`js/data/destiny.js`** (loads after `data/focus.js`):
+  - `ID.IDENTITY[base]` = motto, anthem title, lore and two national spirits (applied once at
+    `newGame` by `ID.Focus.applySpirits`; names kept in `n.spirits`) for the 17 countries.
+  - Appends 6–8 programmes to every national tree, including **three destinies each** (51). A
+    destiny is a programme with `dest = { name, motto, epithet, quote, by, text, flag, leader }`;
+    destinies in a tree exclude each other (`exclAll`). `patch()` adds exclusions to existing
+    programmes (Hesperia's and Pavon's new democratic branches, Irkal's assembly vs the shah).
+  - `ID.FOCUS.families[family]`: a 10-programme tree with 3 destinies for each ideology family,
+    used by every state without a national tree (random worlds, breakaway states). Names use `{A}`
+    and `{N}` (`ID.Focus.sub`, `ID.Focus.nm`).
+  - Story beats get `sup = { quote, by, text, ok, sound }` superevents (great war, armistice,
+    second war, atomic test, second peace, iron curtain, straits crisis, 1968).
+  - `tame()` at the end keeps destinies from freezing the world: legitimacy and order bonuses last
+    ten years, defence bonuses are capped at +12%, and every destiny adds threat.
+- **Engine** (`sim/focus.js`): `Fo.destiny` renames the state (`n.destiny = {id, title, name, motto,
+  epithet, flag, ideo, t, lapsed}`), renames the leader, adds the epithet, headlines, chronicles
+  (`type: 'destiny'`) and queues a superevent for the player in `G.superq`. A later change of
+  ideology sets `destiny.lapsed` in `ID.applyIdeology` and the state goes back to its normal name
+  and flag. One destiny per state. `ID.addEpithet` (also from capitulations and civil-war victories
+  in `diplomacy.js`); `ID.identityOf(G, n)` gives motto, anthem, lore and spirits for any state,
+  generated from family pools where nothing is written. New effect `['subvertNb', v]`. In free mode
+  AI states only take regime-changing programmes if they drift that way or are one of the ~30%
+  marked `n.a.reformer`.
+- **Flags** (`ui/flags.js`): `destFlag(spec)` draws destiny flags; the cache key includes the
+  destiny id.
+- **Anthems** (`ui/audio.js`): `ID.Audio.anthem(seed, family, short)` writes and plays a march
+  from the state's name (seed = base + family + destiny); `stopAnthem`, `anthemPlaying`.
+- **UI** (`ui/nation.js`): the Nation screen (click the flag and name in the top band:
+  `acts.nation`) with flag, epithets, motto, anthem button, lore, spirits, annals and the state of
+  each destiny; `UI.showSuper` / `acts.superOk` for full-screen superevents (kind `'super'`),
+  shown from `UI.frame` before dispatches. Destiny programmes are gold in the tree and show the
+  name the state will take.
+- Tests: `/home/claude/scripts/nation.js`, `/home/claude/scripts/super.js` (WHO=Cassine
+  DEST=ca_d_freeworld to force a destiny), `node tools/history.js` now lists destinies reached.
+
 ## Published (end of session 2)
 
 - Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `1794603075-a610` after session 4,

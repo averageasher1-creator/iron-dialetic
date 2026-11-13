@@ -82,6 +82,16 @@ beat would make the player's country declare war, the player gets the choice ins
 would force the player into peace or an alliance, it arrives as an offer. Before 1939 AI states
 start fewer wars of their own and found no new blocs, so the great wars come from the script.
 
+### Destinies and identity (added in session 5)
+The aim is attachment: a player should finish a campaign proud of what their country became. Every
+national tree has three or more **destinies**, the end points of its branches. A destiny renames the
+state, raises a new flag, installs a named leader and arrives as a full-screen moment with a line
+meant to be remembered. Destinies are written as short, specific, slightly ominous scenes rather than
+bonuses: "Your request was anticipated in 1951." States without a national tree get a family tree
+with destinies of their own, so every country on every map has somewhere to go. Each country of The
+Two Continents also has a motto, an anthem (generated from its name), a short history and two
+national spirits; titles ("Victor over Hesperia", "Born of Revolution") accumulate as it plays.
+
 ### Combat in five sentences
 Troops are a share of your population set by the mobilisation slider; soldiers are not
 workers. To attack, pick a neighbour you are at war with, set the commit slider, choose a

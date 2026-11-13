@@ -58,6 +58,13 @@ machine, change it in **Settings**.
   the 17 countries of *The Two Continents* has its own branching tree, with paths that rule each
   other out, change the system of government or start wars; every state shares a general tree
   for industry, farming, the army, the state and foreign policy.
+- **Destinies**: every country's programme branches into three or more endings. Reach one and
+  the state takes a new name and a new flag, with a moment to match ("Ring the bells backward. We
+  are returning to the hour before the fall."). Every country on every map has a tree: the 17 of
+  *The Two Continents* have their own, and every other state gets one for its family of ideas.
+- **The Nation screen**: click your flag for your motto, your anthem (each state has its own
+  march, written from its name), its history, its national spirit, the titles it has earned and
+  the destinies still open to it.
 - **A land race from the first day**: about a quarter of the world starts as unclaimed
   hinterland. Every state pushes into it with troops, no war needed, until the borders close.
 - **OpenFront-style war**: fronts advance tile by tile by troop density, terrain, rivers and

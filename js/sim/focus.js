@@ -28,13 +28,18 @@
     all = {}; gen = {}; nat = {};
     for (const f of ID.FOCUS.general) { all[f.id] = f; gen[f.id] = f; f.tree = 'general'; }
     for (const b in ID.FOCUS.nations) { nat[b] = {}; for (const f of ID.FOCUS.nations[b]) { all[f.id] = f; nat[b][f.id] = f; f.tree = b; } }
+    for (const k in ID.FOCUS.families || {}) for (const f of ID.FOCUS.families[k]) { all[f.id] = f; f.tree = 'fam:' + k; }
   }
+  /* Names in family trees carry {A} and {N}: the state's adjective and name. */
+  Fo.sub = (t, n) => (t ? String(t).replace(/\{A\}/g, n.adj).replace(/\{N\}/g, n.base) : '');
+  Fo.nm = (f, n) => Fo.sub(f.name, n);
   Fo.def = (id) => { if (!all) index(); return all[id]; };
   Fo.ensure = (n) => n.path || (n.path = { cur: null, start: 0, end: 0, done: {} });
   /* The trees a country can draw on: its national programme (if it has one) and the general one. */
   Fo.trees = function (n) {
     const out = [];
     if (n.tree && ID.FOCUS.nations[n.tree]) out.push({ key: 'nat', name: n.adj + ' programme', list: ID.FOCUS.nations[n.tree] });
+    else { const fam = ID.ideo(n).family, L = ID.FOCUS.families && ID.FOCUS.families[fam]; if (L) out.push({ key: 'nat', name: n.adj + ' programme', fam, list: L }); }
     out.push({ key: 'gen', name: 'General programme', list: ID.FOCUS.general });
     return out;
   };
@@ -42,7 +47,7 @@
   Fo.current = (n) => (n.path && n.path.cur ? Fo.def(n.path.cur) : null);
   Fo.progress = (G, n) => { const p = n.path; if (!p || !p.cur) return 0; return clamp((G.tick - p.start) / Math.max(1, p.end - p.start), 0, 1); };
 
-  const names = (ids) => ids.map((id) => (Fo.def(id) || { name: id }).name).join(', ');
+  const names = (ids, n) => ids.map((id) => (n ? Fo.nm(Fo.def(id) || { name: id }, n) : (Fo.def(id) || { name: id }).name)).join(', ');
   const targets = (f) => { const out = []; for (const x of f.fx || []) if ((x[0] === 'war' || x[0] === 'ally') && typeof x[1] === 'string') out.push(x); return out; };
 
   /* '' if the programme can be started now, else the reason. */
@@ -51,9 +56,10 @@
     if (p.done[f.id] != null && !f.repeat) return 'Completed.';
     if (f.repeat && p.done[f.id] != null && G.tick - p.done[f.id] < f.repeat * 360) return 'Can be repeated from ' + ID.dateOf(p.done[f.id] + f.repeat * 360).short + '.';
     if (!ignoreCur && p.cur) return p.cur === f.id ? 'Under way.' : 'Another programme is under way.';
-    if (f.excl) for (const x of f.excl) if (p.done[x] != null) return 'Ruled out: you chose ' + Fo.def(x).name + '.';
-    if (f.req) { const miss = f.req.filter((x) => p.done[x] == null); if (miss.length) return 'Needs ' + names(miss) + '.'; }
-    if (f.reqAny && !f.reqAny.some((x) => p.done[x] != null)) return 'Needs one of: ' + names(f.reqAny) + '.';
+    if (f.excl) for (const x of f.excl) if (p.done[x] != null) return 'Ruled out: you chose ' + Fo.nm(Fo.def(x), n) + '.';
+    if (f.dest && n.destiny && !n.destiny.lapsed && n.destiny.id !== f.id) return 'You have already reached a destiny: ' + n.destiny.name + '.';
+    if (f.req) { const miss = f.req.filter((x) => p.done[x] == null); if (miss.length) return 'Needs ' + names(miss, n) + '.'; }
+    if (f.reqAny && !f.reqAny.some((x) => p.done[x] != null)) return 'Needs one of: ' + names(f.reqAny, n) + '.';
     if (f.year && ID.yearOf(G.tick) < f.year) return 'Not before ' + f.year + '.';
     if (f.after && G.historical && G.story && !G.story.done[f.after]) { const b = St.beat(f.after); return 'In this history, waits for ' + (b ? St.title(b) + ' (' + ID.dateOf(St.at(b)).short + ')' : 'later events') + '.'; }
     if (f.ideos && f.ideos.indexOf(n.ideo) < 0) return 'Only under ' + f.ideos.map((i) => ID.IDEOLOGIES[i].name).join(' or ') + '.';
@@ -101,11 +107,14 @@
     const p = Fo.ensure(n);
     p.cur = null; p.done[f.id] = G.tick;
     const isP = n.id === G.player;
-    if (isP) { ID.news(G, 'Programme complete: ' + f.name + '.', 'good', n.id); ID.sfx(G, 'good'); }
+    const nm = Fo.nm(f, n);
+    if (isP) { ID.news(G, 'Programme complete: ' + nm + '.', 'good', n.id); ID.sfx(G, 'good'); }
     const big = (f.fx || []).some((x) => x[0] === 'ideology' || x[0] === 'war' || x[0] === 'civilwar');
-    if (f.tree !== 'general' && (isP || big)) ID.chron(G, 'focus', n.name + ' completes the programme “' + f.name + '”.', n.id);
-    else if (f.tree !== 'general' && ID.isMajor(G, n)) ID.news(G, n.name + ': ' + f.name + '.', 'pol', n.id);
+    if (f.dest) { /* recorded by destiny() */ }
+    else if (f.tree !== 'general' && (isP || big)) ID.chron(G, 'focus', n.name + ' completes the programme “' + nm + '”.', n.id);
+    else if (f.tree !== 'general' && ID.isMajor(G, n)) ID.news(G, n.name + ': ' + nm + '.', 'pol', n.id);
     ID.Events.applyFx(G, n, f.fx, { focus: f.id });
+    if (f.dest && n.alive) Fo.destiny(G, n, f);
     if (n.alive) ID.Combat.refresh(G, n);
     if (isP) G.uiDirty = true;
   };
@@ -121,20 +130,75 @@
     }
   };
 
+  /* ---------------------------------------------------------------- destinies, epithets, identity */
+  Fo.destiny = function (G, n, f) {
+    const d = f.dest, S = (t) => Fo.sub(t, n);
+    const old = n.name;
+    n.destiny = { id: f.id, title: Fo.nm(f, n), name: S(d.name), motto: S(d.motto), epithet: S(d.epithet), flag: d.flag, ideo: n.ideo, t: G.tick };
+    n.name = n.destiny.name;
+    if (d.leader) { n.leader.name = S(d.leader); n.leader.title = ''; }
+    ID.addEpithet(G, n, n.destiny.epithet);
+    ID.headline(G, { kicker: 'Destiny · ' + old, title: n.destiny.name, sub: '“' + S(d.quote) + '” — ' + S(d.by), a: n.id, tone: n.id === G.player ? 'good' : 'pol' });
+    ID.chron(G, 'destiny', old + ' becomes ' + n.destiny.name + ': ' + n.destiny.title + '.', n.id);
+    if (n.id === G.player && !G.autoPlayer && !G.headless) { (G.superq = G.superq || []).push({ kind: 'destiny', nation: n.id, focus: f.id }); G.uiDirty = true; }
+    if (!G.headless) G.dirtyAll = true;
+  };
+  /* Titles a state earns: shown on the Nation screen and in the chronicle. Newest first, four at most. */
+  ID.addEpithet = function (G, n, t) {
+    if (!t) return;
+    n.epithets = n.epithets || [];
+    if (n.epithets.some((e) => e.t === t)) return;
+    n.epithets.unshift({ t, at: G.tick });
+    if (n.epithets.length > 4) n.epithets.length = 4;
+    if (n.id === G.player) ID.news(G, n.name + ' is now remembered as “' + t + '”.', 'good', n.id);
+  };
+  /* National spirits: two per country of The Two Continents, applied once at the start. */
+  Fo.applySpirits = function (G, n) {
+    const I = ID.IDENTITY && ID.IDENTITY[n.base]; if (!I || n.spirits) return;
+    n.spirits = I.spirits.map((s) => s.name);
+    for (const s of I.spirits) ID.Events.applyFx(G, n, s.fx, { spirit: s.name });
+  };
+  const POOL = {
+    socialist: { motto: ['Bread, land and peace.', 'The future works here.', 'Every hand on the wheel of history.', 'From the factory floor to the stars.', 'Unbreakable, because we are many.'], anthem: ['Hymn of the Red Morning', 'The Song of Labour', 'Rise, {A} Workers', 'March of the Morning Shift'] },
+    anarchist: { motto: ['No gods, no masters.', 'Nothing is ours. Everything is ours.', 'The commune is the country.', 'Free, and armed.'], anthem: ['The Black Banner', 'Song of the Free Columns', 'Hymn Without a King'] },
+    liberal: { motto: ['Liberty under law.', 'Every voice, every vote.', 'Open sea, open market, open mind.', 'The republic is its citizens.'], anthem: ['Lamp of the Republic', 'Hymn to {N}', 'The Free and the Brave of {N}'] },
+    conservative: { motto: ['As it was, so it shall be.', 'Crown, faith and soil.', 'The old ways endure.', 'God keep {N}.'], anthem: ['God Keep the King of {N}', 'The Old Banner', 'Hymn of the Faithful Realm'] },
+    authoritarian: { motto: ['Order. Work. Victory.', 'The nation is one.', 'Iron discipline, iron borders.', 'Duty before all.'], anthem: ['March of the {A} Legions', 'The Steel Hymn', 'Onward, {N}'] },
+    heterodox: { motto: ['A new road for a new century.', 'Everything has a price.', 'The many, rising.', 'Every signal answered.'], anthem: ['Song of the New Dawn', 'The {A} Signal', 'Hymn of the Exchange'] },
+  };
+  /* Motto, anthem and lore for any state: written for The Two Continents, generated elsewhere. */
+  ID.identityOf = function (G, n) {
+    const I = ID.IDENTITY && ID.IDENTITY[n.base], fam = ID.ideo(n).family, h = ID.hashStr(n.base + ':' + fam), P = POOL[fam] || POOL.liberal;
+    const pick = (a) => Fo.sub(a[h % a.length], n);
+    const dest = n.destiny && !n.destiny.lapsed ? n.destiny : null;
+    let lore = I ? I.lore : '';
+    if (!lore) {
+      const share = n.tiles / Math.max(1, G.landCount), size = share > 0.12 ? 'great' : share > 0.05 ? 'middling' : 'small';
+      const coast = G.coast && G.coast[n.capital] ? 'a harbour capital' : 'an inland capital';
+      const born = n.civilOf ? ' It was born in a civil war, and remembers.' : '';
+      lore = n.name + ' is a ' + size + ' state with ' + coast + ' and ' + Math.round(n.pop / 1e5) / 10 + ' million people.' + born + ' ' + ID.ideo(n).short;
+    }
+    return { motto: dest ? dest.motto : I && !n.civilOf && (!n.a.startIdeo || ID.IDEOLOGIES[n.a.startIdeo].family === fam) ? I.motto : pick(P.motto), anthem: I && n.tree === n.base ? I.anthem : pick(P.anthem), lore, spirits: I && n.spirits ? I.spirits : [] };
+  };
+
   /* ---------------------------------------------------------------- AI choice */
   Fo.aiPick = function (G, n) {
     const p = Fo.ensure(n); if (p.cur) return;
     const av = Fo.available(G, n); if (!av.length) return;
     const I = ID.ideo(n), hist = !!G.historical;
+    if (n.a.reformer == null) n.a.reformer = G.rng.chance(0.3) ? 1 : 0; // some regimes set out to transform themselves; most do not
     const wantArmy = n.nwars || n.a.threatened, hungry = n.foodBal < 1.02;
     const f = G.rng.weighted(av, (x) => {
       let w = x.tree === 'general' ? 1 : 3;
       if (x.tree !== 'general' && hist) w = x.hist ? 40 : 0;
       if (x.repeat) w *= 0.45;
+      if (x.dest) w *= 3;
       if (typeof x.ai === 'function') w *= x.ai(n, G); else if (x.ai != null) w *= x.ai;
       const fx = x.fx || [];
       if (fx.some((e) => e[0] === 'war')) w *= hist && x.hist ? 1 : n.nwars ? 0.1 : 0.4 + I.dip.agg;
-      if (fx.some((e) => e[0] === 'ideology' && e[1] !== n.ideo)) w *= hist ? (x.hist ? 1 : 0) : 0.5;
+      // a programme that changes the regime is taken mostly where the country is already drifting that way
+      const io = fx.find((e) => e[0] === 'ideology' && e[1] !== n.ideo);
+      if (io) w *= hist ? (x.hist ? 1 : 0) : (n.drift[io[1]] || 0) > 10 ? 0.5 : n.a.reformer ? 0.3 : 0;
       if (fx.some((e) => e[0] === 'civilwar')) w = 0;
       if (wantArmy && /^g_(staff|forts|motor|air|rearm)/.test(x.id)) w *= 2.5;
       if (hungry && /^g_(ext|irrig|mech)/.test(x.id)) w *= 2.5;
@@ -311,6 +375,7 @@
     subvert: (G, n, f) => subvert(G, n, tgt(G, f[1]), f[2]),
     civilwar: (G, n, f) => civilWarFx(G, n, f[1], f[2] || 0.4),
     protector: (G, n) => protector(G, n),
+    subvertNb: (G, n, f) => { for (const k in G.border[n.id] || {}) { const t = G.nations[+k]; if (t && t.alive && t !== n && !ID.sameBloc(G, n.id, t.id)) subvert(G, n, t, f[1]); } },
   };
   Fo.DESC = {
     ideology: (f, n) => (n && n.ideo === f[1] ? { t: 'Confirms the ' + ID.IDEOLOGIES[f[1]].name + ' regime', good: true } : { t: 'The regime becomes ' + ID.IDEOLOGIES[f[1]].name, good: null }),
@@ -325,6 +390,7 @@
     subvert: (f) => ({ t: 'Agitation in ' + f[1], good: true }),
     civilwar: (f) => ({ t: 'Civil war against ' + ID.IDEOLOGIES[f[1]].name, good: false }),
     protector: () => ({ t: 'Alliance with a friendly great power', good: true }),
+    subvertNb: () => ({ t: 'Agitation in every neighbouring state', good: true }),
   };
 
   /* ---------------------------------------------------------------- the storyline */
@@ -347,7 +413,7 @@
       let ok = true; if (b.cond) { try { ok = !!b.cond(G); } catch (e) { ok = false; } }
       if (!ok) { G.story.done[b.id] = 2; continue; }
       if (b.nation) { const n = ID.byBase(G, b.nation); if (n) ID.Events.queue(G, n, b.id, {}); else G.story.done[b.id] = 2; }
-      else b.run(G);
+      else { b.run(G); if (b.sup && !G.headless) (G.superq = G.superq || []).push({ kind: 'story', id: b.id }); }
     }
   };
   St.upcoming = function (G, k) {

@@ -1,6 +1,6 @@
 'use strict';
 const path = require('path'); const root = path.join(__dirname, '..', 'js'); globalThis.ID = {};
-for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/focus', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
+for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/focus', 'data/destiny', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
 const ID = globalThis.ID;
 const seed = +(process.argv[2] || 5), yrs = +(process.argv[3] || 12), scen = process.argv[4] || 'meridia';
 const G = ID.newGame({ seed, scenario: scen, headless: true });

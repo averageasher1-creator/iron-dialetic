@@ -72,6 +72,72 @@
     try { S[name](); } catch (e) { /* audio is never worth a crash */ }
   };
 
+  /* ---------------------------------------------------------------- anthems
+     Every state gets its own march, generated from its name: brass melody, tuba, snare and timpani.
+     The family sets the mode (major, minor or mixolydian) and the tempo; the name sets the tune. */
+  let anthemBus = null, anthemEnd = 0;
+  A.anthemPlaying = () => !!(ac && anthemBus && ac.currentTime < anthemEnd);
+  A.stopAnthem = function () {
+    if (!ac || !anthemBus) return;
+    const g = anthemBus; g.gain.setTargetAtTime(0, ac.currentTime, 0.08); setTimeout(() => { try { g.disconnect(); } catch (e) { /* gone */ } }, 600);
+    anthemBus = null; anthemEnd = 0;
+    if (musicBus) musicBus.gain.setTargetAtTime(ID.Music.on && !A.muted ? ID.Music.vol * 0.55 : 0, ac.currentTime, 0.5);
+  };
+  A.anthem = function (seed, fam, short) {
+    if (!ac || A.muted) return 0;
+    A.stopAnthem();
+    let h = 2166136261; for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+    const r = () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; };
+    const MODES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], mixo: [0, 2, 4, 5, 7, 9, 10] };
+    const modeName = fam === 'anarchist' || fam === 'authoritarian' ? 'minor' : fam === 'heterodox' ? 'mixo' : fam === 'socialist' ? (r() < 0.6 ? 'major' : 'minor') : 'major';
+    const sc = MODES[modeName], bpm = (fam === 'conservative' ? 84 : fam === 'authoritarian' ? 104 : 96) + Math.floor(r() * 12), beat = 60 / bpm;
+    const root = 196 * Math.pow(2, (Math.floor(r() * 5) - 2) / 12);
+    const deg = (d, oct) => root * Math.pow(2, (sc[((d % 7) + 7) % 7] + 12 * (Math.floor(d / 7) + (oct || 0))) / 12);
+    const progs = modeName === 'minor' ? [[0, 3, 4, 0, 5, 3, 4, 0], [0, 5, 3, 4, 0, 3, 4, 0], [0, 6, 5, 4, 0, 3, 4, 0]] : [[0, 3, 4, 0, 5, 3, 4, 0], [0, 4, 5, 3, 0, 3, 4, 0], [0, 3, 0, 4, 5, 1, 4, 0]];
+    const prog = progs[Math.floor(r() * progs.length)];
+    const rhythms = [[1, 1, 1, 1], [1.5, 0.5, 1, 1], [2, 1, 1], [1, 1, 2], [0.5, 0.5, 1, 2], [1.5, 0.5, 2], [1, 0.5, 0.5, 2]];
+    const motifA = rhythms[Math.floor(r() * rhythms.length)], motifB = rhythms[Math.floor(r() * rhythms.length)];
+    const bars = short ? 4 : 8, t0 = ac.currentTime + 0.15;
+    anthemBus = ac.createGain(); anthemBus.gain.value = 0.9; anthemBus.connect(master);
+    if (musicBus) musicBus.gain.setTargetAtTime(0.0001, ac.currentTime, 0.2);
+    const bus = anthemBus;
+    const note = (type, f, t, dur, g, lp) => {
+      const o = ac.createOscillator(), v = ac.createGain(); o.type = type; o.frequency.value = f;
+      v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(g, t + 0.025); v.gain.setValueAtTime(g * 0.8, t + dur * 0.7); v.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.98);
+      let nd = o; if (lp) { const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = lp; o.connect(fl); nd = fl; }
+      nd.connect(v); v.connect(bus); o.start(t); o.stop(t + dur + 0.05);
+    };
+    const hit = (t, g, f0, f1, d) => { const s2 = ac.createBufferSource(), fl = ac.createBiquadFilter(), v = ac.createGain(); s2.buffer = noiseBuf; fl.type = 'bandpass'; fl.frequency.value = f0; v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(g, t + 0.005); v.gain.exponentialRampToValueAtTime(0.0001, t + d); s2.connect(fl); fl.connect(v); v.connect(bus); s2.start(t, Math.random() * 0.5); s2.stop(t + d + 0.02); if (f1) note('sine', f1, t, d * 1.4, g * 1.4); };
+    let cur = 7 + 2 * Math.floor(r() * 2); // start on the tonic or the third, an octave up
+    for (let b = 0; b < bars; b++) {
+      const ch = prog[b % 8], tb = t0 + b * 4 * beat, last = b === bars - 1;
+      // brass chord and tuba
+      for (const k of [0, 2, 4]) note('sawtooth', deg(ch + k, -1), tb, 4 * beat * 0.95, 0.018, 1100);
+      note('triangle', deg(ch, -2), tb, beat * 0.9, 0.11); note('triangle', deg(ch + 4, -2), tb + 2 * beat, beat * 0.9, 0.09);
+      if (!last) { note('triangle', deg(ch, -2), tb + beat, beat * 0.5, 0.05); note('triangle', deg(ch + 4, -2), tb + 3 * beat, beat * 0.5, 0.05); }
+      // drums: timpani on the bar, snare on 2 and 4, a roll into every fourth bar
+      hit(tb, 0.16, 120, 98, 0.5);
+      hit(tb + beat, 0.07, 1900, 0, 0.12); hit(tb + 3 * beat, 0.07, 1900, 0, 0.12);
+      if (b % 4 === 3 && !last) for (let k = 0; k < 6; k++) hit(tb + 3 * beat + k * beat / 6, 0.03 + k * 0.01, 2100, 0, 0.06);
+      // melody
+      const rh = last ? [4] : b % 4 === 3 ? [2, 2] : b % 2 ? motifB : motifA;
+      let tt = tb;
+      for (let k = 0; k < rh.length; k++) {
+        if (k === 0) { const tones = [ch, ch + 2, ch + 4, ch + 7]; let best = tones[0] + 7, bd = 99; for (const tn of tones) for (const o of [0, 7, 14]) { const c2 = tn + o; if (Math.abs(c2 - cur) < bd && c2 >= 5 && c2 <= 16) { bd = Math.abs(c2 - cur); best = c2; } } cur = best; }
+        else cur += r() < 0.7 ? (r() < 0.5 ? 1 : -1) : (r() < 0.5 ? 2 : -2);
+        if (last) cur = 7;
+        cur = Math.max(4, Math.min(16, cur));
+        const d = rh[k] * beat;
+        note('sawtooth', deg(cur), tt, d * 0.92, 0.075, 1700); note('triangle', deg(cur, -1), tt, d * 0.92, 0.04); note('square', deg(cur), tt, d * 0.92, 0.012, 2600);
+        tt += d;
+      }
+    }
+    const dur = bars * 4 * beat + 0.6;
+    anthemEnd = ac.currentTime + dur;
+    setTimeout(() => { if (anthemBus === bus) A.stopAnthem(); }, dur * 1000 + 300);
+    return dur;
+  };
+
   /* ---------------------------------------------------------------- score
      Slow chord pads in a minor key, voiced low and filtered; war adds timpani and distant guns,
      crisis thins it to a drone. Scheduled a chord ahead on the audio clock. */

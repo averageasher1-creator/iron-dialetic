@@ -9,6 +9,9 @@
   const Fo = () => ID.Focus;
 
   const isHist = (G, f) => G.historical && f.hist && f.tree !== 'general';
+  const NM = (f, n) => ID.Focus.nm(f, n), DS = (f, n) => ID.Focus.sub(f.desc || '', n);
+  const destTag = (f) => (f.dest ? ' <span class="tag dest"' + tip('A destiny: the end of a path. It renames the state, raises a new flag and closes the other destinies.') + '>destiny</span>' : '');
+  const destTip = (f, n) => (f.dest ? '<hr><b>Destiny.</b> The state becomes <b>' + esc(ID.Focus.sub(f.dest.name, n)) + '</b>.<br><i>“' + esc(ID.Focus.sub(f.dest.motto, n)) + '”</i>' : '');
   const histTag = (G, f) => (isHist(G, f) ? ' <span class="tag hist"' + tip('The path this country took in history. Other countries follow theirs; you need not.') + '>as it happened</span>' : '');
   const gates = (f) => {
     const g = [];
@@ -19,7 +22,7 @@
   };
   function focusTip(G, n, f) {
     const why = Fo().block(G, n, f, true);
-    return '<h5>' + esc(f.name) + '</h5>' + esc(f.desc || '') + '<hr><span class="dim">' + Fo().days(G, n, f) + ' days' + (gates(f) ? ' · ' + esc(gates(f)) : '') + '</span><div class="fx" style="display:flex;flex-wrap:wrap;gap:0 10px;font-weight:600;margin-top:4px">' + UI.fxHtml(f.fx, n) + '</div>' +
+    return '<h5>' + esc(NM(f, n)) + '</h5>' + esc(DS(f, n)) + destTip(f, n) + '<hr><span class="dim">' + Fo().days(G, n, f) + ' days' + (gates(f) ? ' · ' + esc(gates(f)) : '') + '</span><div class="fx" style="display:flex;flex-wrap:wrap;gap:0 10px;font-weight:600;margin-top:4px">' + UI.fxHtml(f.fx, n) + '</div>' +
       (isHist(G, f) ? '<hr><span class="dim">This is what happened in history.</span>' : '') + (why && why !== 'Under way.' ? '<hr><b class="bad">' + esc(why) + '</b>' : '');
   }
 
@@ -32,13 +35,13 @@
       : '<b>Free mode.</b> No scripted history: every country picks its own programme.') + '</div>';
     if (cur) {
       const pr = F.progress(G, n), left = Math.max(0, p.end - G.tick);
-      h += sec('Under way', '<div class="foc-cur"><h4>' + esc(cur.name) + histTag(G, cur) + '</h4><p>' + esc(cur.desc || '') + '</p>' + UI.bar(pr, 1, 'r') +
+      h += sec('Under way', '<div class="foc-cur"><h4>' + esc(NM(cur, n)) + histTag(G, cur) + destTag(cur) + '</h4><p>' + esc(DS(cur, n)) + '</p>' + UI.bar(pr, 1, 'r') +
         '<div class="row nw" style="margin-top:6px"><span class="dim" style="font-size:13.5px">' + left + ' days left · completes ' + ID.dateOf(p.end).short + '</span><span class="sp"></span>' + btn('Abandon', 'cancelFocus', null, { cls: 'sm ghost', tip: 'Stop this programme. The progress is lost.' }) + '</div>' +
         '<div class="fxl">' + UI.fxHtml(cur.fx, n) + '</div></div>');
     } else h += sec('Under way', '<div class="note red">No programme under way. Every month without one is wasted. Start one below or open the tree.</div>');
     h += '<div class="row" style="margin:2px 0 14px">' + btn('Open the programme tree', 'tree', 'nat', { cls: 'red', tip: 'The full tree: every programme, what it needs, and which paths rule each other out.' }) + '</div>';
     const av = F.available(G, n);
-    h += sec('Can start now', av.length ? av.map((f) => '<div class="dec"><h4>' + esc(f.name) + histTag(G, f) + '</h4><p>' + esc(f.desc || '') + '</p><div class="cost">' + F.days(G, n, f) + ' days' + (f.tree === 'general' ? ' · general' : '') +
+    h += sec('Can start now', av.length ? av.map((f) => '<div class="dec' + (f.dest ? ' dest' : '') + '"><h4>' + esc(NM(f, n)) + histTag(G, f) + destTag(f) + '</h4><p>' + esc(DS(f, n)) + '</p><div class="cost">' + F.days(G, n, f) + ' days' + (f.tree === 'general' ? ' · general' : '') +
       ' <span style="display:inline-flex;flex-wrap:wrap;gap:0 10px;font-weight:600">' + UI.fxHtml(f.fx, n) + '</span></div>' +
       btn('Start', 'startFocus', f.id, { cls: 'sm', off: cur ? 'Another programme is under way. Abandon it first.' : '', tip: focusTip(G, n, f) }) + '</div>').join('')
       : '<p class="dim">Nothing is open right now. Later years and finished programmes unlock more.</p>', av.length ? av.length + '' : '');
@@ -50,7 +53,7 @@
       }).join('') + '</div><p class="dim" style="font-size:13px;margin-top:4px">Events whose conditions no longer hold are skipped.</p>' : '<p class="dim">The storyline has run its course.</p>');
     }
     const done = Object.keys(p.done).map((id) => [id, p.done[id]]).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    if (done.length) h += sec('Completed', '<div class="chron">' + done.map((d) => '<div><span>' + ID.dateOf(d[1]).short + '</span><span>' + esc((F.def(d[0]) || { name: d[0] }).name) + '</span></div>').join('') + '</div>');
+    if (done.length) h += sec('Completed', '<div class="chron">' + done.map((d) => '<div><span>' + ID.dateOf(d[1]).short + '</span><span>' + esc(F.def(d[0]) ? NM(F.def(d[0]), n) : d[0]) + '</span></div>').join('') + '</div>');
     return h;
   };
 
@@ -88,16 +91,16 @@
       const st = F.state(G, n, f), [x, y] = pos(f);
       const pr = st === 'cur' ? F.progress(G, n) : 0;
       const canStart = st === 'avail' && !cur;
-      const meta = st === 'done' ? 'done ' + ID.dateOf(n.path.done[f.id]).short : st === 'cur' ? Math.round(pr * 100) + '%' : st === 'excl' ? 'ruled out' : (f.year && ID.yearOf(G.tick) < f.year ? 'from ' + f.year : F.days(G, n, f) + ' days');
-      nodes += '<button class="fn ' + st + (isHist(G, f) ? ' h' : '') + (canStart ? ' go' : '') + '" style="left:' + x + 'px;top:' + y + 'px;width:' + NW + 'px;height:' + NH + 'px"' +
+      const meta = f.dest && st !== 'cur' ? (st === 'done' ? '★ ' : '→ ') + ID.Focus.sub(f.dest.name, n) : st === 'done' ? 'done ' + ID.dateOf(n.path.done[f.id]).short : st === 'cur' ? Math.round(pr * 100) + '%' : st === 'excl' ? 'ruled out' : (f.year && ID.yearOf(G.tick) < f.year ? 'from ' + f.year : F.days(G, n, f) + ' days');
+      nodes += '<button class="fn ' + st + (isHist(G, f) ? ' h' : '') + (f.dest ? ' dest' : '') + (canStart ? ' go' : '') + '" style="left:' + x + 'px;top:' + y + 'px;width:' + NW + 'px;height:' + NH + 'px"' +
         (canStart ? ' data-act="startFocus" data-a=\'"' + f.id + '"\'' : '') + tip(focusTip(G, n, f) + (canStart ? '<hr><b>Click to start.</b>' : st === 'avail' && cur ? '<hr><span class="dim">Another programme is under way.</span>' : '')) + '>' +
-        '<b>' + esc(f.name) + '</b><small>' + esc(meta) + '</small>' + (st === 'cur' ? '<i class="pg" style="width:' + (pr * 100).toFixed(1) + '%"></i>' : '') + '</button>';
+        '<b>' + esc(NM(f, n)) + '</b><small>' + esc(meta) + '</small>' + (st === 'cur' ? '<i class="pg" style="width:' + (pr * 100).toFixed(1) + '%"></i>' : '') + '</button>';
     }
     const tabs = trees.map((t) => '<button class="' + (t.key === T.key ? 'on' : '') + '" data-act="tree" data-a=\'"' + t.key + '"\'>' + esc(t.name) + '</button>').join('');
-    const legend = '<div class="tlg"><span class="fn avail"></span>open <span class="fn cur"></span>under way <span class="fn done"></span>done <span class="fn locked"></span>locked <span class="fn excl"></span>ruled out' + (G.historical ? ' <span class="fn h avail"></span>as it happened' : '') + '</div>';
+    const legend = '<div class="tlg"><span class="fn avail"></span>open <span class="fn cur"></span>under way <span class="fn done"></span>done <span class="fn locked"></span>locked <span class="fn excl"></span>ruled out <span class="fn dest avail"></span>destiny' + (G.historical ? ' <span class="fn h avail"></span>as it happened' : '') + '</div>';
     return '<div class="dlg xwide tree"><div class="dhd"><div class="k">PROGRAMME</div><div class="d">' + esc(n.name) + ' · ' + ID.dateOf(G.tick).str + '</div><button class="x" data-act="closeModal"' + tip('Close (Esc)') + '>✕</button></div>' +
       '<div class="dbd"><div class="row nw" style="margin-bottom:10px"><div class="seg" style="flex:none">' + tabs + '</div><span class="sp"></span>' + legend + '</div>' +
-      (cur ? '<div class="note">Under way: <b>' + esc(cur.name) + '</b>, completes ' + ID.dateOf(n.path.end).short + '. One programme runs at a time.</div>' : '<div class="note red">No programme under way. Click an open programme to start it.</div>') +
+      (cur ? '<div class="note">Under way: <b>' + esc(NM(cur, n)) + '</b>, completes ' + ID.dateOf(n.path.end).short + '. One programme runs at a time.</div>' : '<div class="note red">No programme under way. Click an open programme to start it.</div>') +
       '<div class="tscroll"><div class="tcanvas" style="width:' + W + 'px;height:' + H + 'px"><svg width="' + W + '" height="' + H + '">' + svg + '</svg>' + nodes + '</div></div></div></div>';
   }
   UI.treeKey = 'nat';
@@ -106,11 +109,11 @@
   acts.startFocus = (a) => {
     const G = UI.G, n = P(); const why = ID.Focus.start(G, n, a);
     if (why) { UI.toast(why); return; }
-    UI.toast('Programme begun: ' + ID.Focus.def(a).name + '.', true);
+    UI.toast('Programme begun: ' + NM(ID.Focus.def(a), n) + '.', true);
     if (UI.modalKind === 'tree') UI.renderTree();
     UI.after();
   };
-  acts.cancelFocus = () => { const G = UI.G, n = P(), f = ID.Focus.current(n); if (!f) return; ID.Focus.cancel(G, n); UI.toast(f.name + ' abandoned.'); UI.after(); };
+  acts.cancelFocus = () => { const G = UI.G, n = P(), f = ID.Focus.current(n); if (!f) return; ID.Focus.cancel(G, n); UI.toast(NM(f, n) + ' abandoned.'); UI.after(); };
 
   /* ---------------------------------------------------------------- handbook page */
   Pn.helpProg = function (G) {
@@ -118,6 +121,10 @@
     h += sec('The trees', '<ul><li>The <b>general programme</b> is open to every state: industry, farming, the army, the state, foreign policy, and a few campaigns you can repeat.</li>' +
       '<li>On <b>The Two Continents</b>, each country also has a <b>national programme</b> of its own. Its branches are real choices: some rule each other out, some change the system of government, some start wars.</li>' +
       '<li>A programme can wait on a year, on earlier programmes, or on the regime in power. Hover any programme to see why it is locked.</li></ul>');
+    h += sec('Destinies', '<ul><li>Every path through a national programme ends in a <b>destiny</b>, shown in gold on the tree. Reaching one renames the state, raises a new flag, gives it a new motto and earns it a title.</li>' +
+      '<li>A state can reach one destiny. Choosing a path closes the others.</li>' +
+      '<li>A destiny belongs to the regime that reached it. If the system of government changes, the old name and flag go with it.</li>' +
+      '<li>Click your flag in the top band for the <b>Nation screen</b>: motto, anthem, history, titles, and which destinies are still open.</li></ul>');
     h += sec('Historical mode', '<p class="lead">A toggle when you set up a campaign on The Two Continents. With it on:</p><ul>' +
       '<li>A storyline runs from 1910 to 1976: a great war, revolutions, the Slump in October 1929, a second war, the blocs, a crisis over the straits. Each arrives on its date if its conditions still hold.</li>' +
       '<li>When history reaches your country, you get the dispatch and you choose. The option marked <b>as it happened</b> is what history did; the others are other roads.</li>' +

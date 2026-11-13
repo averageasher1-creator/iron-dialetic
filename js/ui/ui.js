@@ -192,7 +192,7 @@
     const I = ID.ideo(n); const key = n.id + n.ideo + n.name;
     if (key !== topKey || rebuild) {
       topKey = key;
-      $('#top').innerHTML = '<div class="who" data-act="tab" data-a=\'"gov"\' id="t-who">' + ID.Flags.html(n, 'tflag') + '<div><b>' + esc(n.name) + '</b><small>' + esc(I.name) + ' · ' + esc(ID.CONTROL[I.control.type].name) + '</small></div></div>' +
+      $('#top').innerHTML = '<div class="who" data-act="nation" id="t-who">' + ID.Flags.html(n, 'tflag') + '<div><b>' + esc(n.name) + '</b><small>' + esc(I.name) + ' · ' + esc(ID.CONTROL[I.control.type].name) + '</small></div></div>' +
         '<div class="stats">' + STATS.map((s) => '<div class="st ' + s[2] + '" id="st-' + s[0] + '"><i>' + s[1] + '</i><b id="sv-' + s[0] + '">–</b></div>').join('') + '</div>' +
         '<div class="clock"><div class="date" id="t-date"><b id="sv-date"></b><small id="sv-era"></small></div>' +
         '<button class="b spd pause" data-act="pause" id="b-pause"' + tip('<b>Pause / resume</b> <span class="dim">(Space)</span>') + '></button>' +
@@ -227,7 +227,7 @@
     st('stab', '<h5>Stability</h5>Heading for <b>' + Math.round(n.a.stabTgt != null ? n.a.stabTgt : n.stab) + '</b>.<br>Built from legitimacy and the support of each faction weighted by its power; cut by unrest and war weariness.<hr><span class="dim">Below 38, movements can rise. At zero for most of a year, the state dissolves.</span>');
     st('legit', '<h5>Legitimacy</h5>' + Object.keys(I.legit).map((k) => '<div class="kv"><span>' + ID.LEGIT[k].name + ' <span class="dim">' + Math.round(I.legit[k] * 100) + '%</span></span><b>' + Math.round(n.src[k]) + '</b></div>').join('') + '<hr><span class="dim">Each ideology draws on different sources. Open the State panel for what moves them.</span>');
     st('auth', '<h5>Authority</h5>Spent on laws and decisions. ' + esc(ID.CONTROL[I.control.type].desc));
-    const tw = document.getElementById('t-who'); if (tw) tw.setAttribute('data-tip', '<h5>' + esc(n.name) + '</h5>' + esc(I.short) + '<hr>' + esc(n.leader.title) + ' ' + esc(n.leader.name) + ', aged ' + n.leader.age);
+    const tw = document.getElementById('t-who'); if (tw) tw.setAttribute('data-tip', '<h5>' + esc(n.name) + '</h5>' + esc(I.short) + '<hr>' + esc(n.leader.title) + ' ' + esc(n.leader.name) + ', aged ' + n.leader.age + '<hr><b>Click</b> for the Nation screen: motto, anthem, destinies.');
     const td = document.getElementById('t-date'); if (td) td.setAttribute('data-tip', '<h5>' + ID.ERAS[ID.eraOf(G.tick)].name + '</h5>' + esc(ID.ERAS[ID.eraOf(G.tick)].desc) + '<hr><span class="dim">History delivers its verdict on 1 Jan ' + ID.END_YEAR + '.</span>');
   };
   UI.setPaused = function (p) { UI.G.paused = p; UI.renderTop(); };
@@ -471,6 +471,7 @@
       if (big && (R.mode === 'stability' || R.mode === 'opposition')) G.dirtyAll = true;
     }
     UI.tickHeadlines(dt);
+    if (G.superq && G.superq.length && !UI.modalKind && !G.over) UI.showSuper();
     if (G.evq.length && !UI.modalKind && !G.over) UI.showEvent();
     if (G.over && !UI.overShown) { if (UI.modalKind === 'event' || UI.modalKind === 'menu') UI.closeModal(); G.evq.length = 0; if (!UI.modalKind) { UI.overShown = true; ID.Screens.end(G); } }
     if (G.wantAutosave) { G.wantAutosave = false; ID.Screens.autosave(G); }
@@ -483,7 +484,7 @@
     const k = e.key;
     if (UI.modalKind === 'event') { if (k >= '1' && k <= '9') { const b = document.querySelectorAll('#modal .choice')[+k - 1]; if (b) b.click(); } return; }
     if (k === 'Escape' && UI.aim) { UI.aim = null; document.getElementById('map').classList.remove('aim'); UI.toast('Order cancelled.', true); return; }
-    if (k === 'Escape') { if (UI.modalKind) { if (UI.modalKind !== 'end' && UI.modalKind !== 'event') UI.closeModal(); } else if (UI.tab) UI.openTab(null); else if (UI.sel >= 0) acts.unsel(); else acts.menu(); return; }
+    if (k === 'Escape') { if (UI.modalKind) { if (UI.modalKind === 'super') acts.superOk(); else if (UI.modalKind !== 'end' && UI.modalKind !== 'event') UI.closeModal(); } else if (UI.tab) UI.openTab(null); else if (UI.sel >= 0) acts.unsel(); else acts.menu(); return; }
     if (UI.modalKind) return;
     if (k === ' ') { e.preventDefault(); acts.pause(); return; }
     if (k >= '1' && k <= '5') { acts.speed(+k); return; }

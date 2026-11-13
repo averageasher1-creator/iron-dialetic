@@ -206,6 +206,10 @@
     if (!L.alive) return;
     const w = D.warOf(G, L.id, Wn.id);
     Wn.glory = clamp(Wn.glory + 18, 0, 100); Wn.prestige += 12; Wn.cnt.warsWon = (Wn.cnt.warsWon || 0) + 1;
+    if (L.civilOf !== Wn.id && L.civil !== Wn.id) {
+      if (ID.isMajor(G, L) || mode === 'annex') ID.addEpithet(G, Wn, (mode === 'annex' ? 'Conqueror of ' : 'Victor over ') + L.base);
+      if (Wn.cnt.warsWon === 3) ID.addEpithet(G, Wn, 'Thrice Victorious');
+    }
     if (w && w.cb === 'holy' && w.a === Wn.id) Wn.cnt.holyWars = (Wn.cnt.holyWars || 0) + 1;
     if ((L.a.warInd || 0) >= 2 * (Wn.a.warInd || 1)) Wn.flags.beatStronger = 1;
     if (mode === 'install' || mode === 'release') {
@@ -251,6 +255,7 @@
     const civil = by && (n.civilOf === by.id || n.civil === by.id);
     if (civil) {
       for (let p = 1; p < G.provinces.length; p++) { const Pr = G.provinces[p]; if (Pr.core === n.id) { Pr.core = by.id; if (Pr.owner === by.id) Pr.integ = 100; } }
+      ID.addEpithet(G, by, by.civilOf ? 'Born of Revolution' : 'Victor of the Civil War');
       by.civil = 0; by.civilOf = 0; by.a.civilEnd = G.tick; by.glory = clamp(by.glory + 20, 0, 100); by.stab = Math.min(100, by.stab + 8); by.cnt.civilWarsWon = (by.cnt.civilWarsWon || 0) + 1;
       if (by.claims.length === 0 && n.claims.length) by.claims = n.claims.slice();
       ID.news(G, 'The civil war is over: ' + by.name + ' rules the whole country.', 'rev', by.id);
