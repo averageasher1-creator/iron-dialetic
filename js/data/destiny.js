@@ -694,6 +694,38 @@
     st_peace45: { quote: 'We won. Now we have to live with what winning looked like.', by: 'a returning soldier, to a newspaper', text: 'The guns stop for the second time in thirty years. The victors sit down to divide the world, and every one of them has brought a map.', ok: 'Rebuild' },
   };
   for (const b of ID.STORY) if (SUP[b.id]) b.sup = SUP[b.id];
+  const SUPART = { st_shots: 'war', st_armistice: 'peace', st_second_war: 'war', st_sunrise: 'atom', st_curtain: 'wall', st_straits_crisis: 'crisis', st_68: 'crowd', st_peace45: 'peace' };
+  for (const b of ID.STORY) if (b.sup) b.sup.art = SUPART[b.id] || 'war';
+
+  /* The picture each destiny's superevent opens with (ui/scenes.js). */
+  const ART = {
+    au_d_crown: 'crown', au_d_commonwealth: 'parliament', au_d_councils: 'revolution',
+    ca_d_freeworld: 'sea', ca_d_commonwealth: 'industry', ca_d_new: 'army',
+    no_d_fortress: 'mountain', no_d_crowns: 'crown', no_d_home: 'parliament',
+    te_d_workers: 'industry', te_d_middle: 'peace', te_d_confed: 'mountain',
+    ve_d_free: 'commune', ve_d_syndicate: 'industry', ve_d_unbowed: 'war',
+    dr_d_greater: 'army', dr_d_kingdom: 'crown', dr_d_republic: 'parliament',
+    ly_d_serene: 'sea', ly_d_thalasso: 'sea', ly_d_freecity: 'parliament',
+    ka_d_union: 'industry', ka_d_commune: 'revolution', ka_d_market: 'parliament',
+    ru_d_greater: 'army', ru_d_fortress: 'mountain', ru_d_republic: 'parliament',
+    su_d_celestial: 'peace', su_d_strong: 'industry', su_d_people: 'revolution',
+    he_d_greater: 'army', he_d_technate: 'machine', he_d_republic: 'parliament',
+    ir_d_holy: 'faith', ir_d_shah: 'crown', ir_d_assembly: 'industry',
+    pa_d_kingdom: 'crown', pa_d_marshalate: 'army', pa_d_republic: 'peace',
+    me_d_network: 'machine', me_d_sky: 'space', me_d_federal: 'parliament',
+    an_d_peaceful: 'crowd', an_d_armed: 'revolution', an_d_social: 'peace',
+    ke_d_company: 'sea', ke_d_haven: 'sea', ke_d_republic: 'peace',
+    vs_d_seas: 'sea', vs_d_commune: 'commune', vs_d_fortress: 'mountain',
+    fs_d_beacon: 'revolution', fs_d_union: 'industry', fs_d_commons: 'parliament',
+    fa_d_unbowed: 'war', fa_d_commune: 'commune', fa_d_syndicate: 'industry',
+    fl_d_market: 'sea', fl_d_union: 'parliament', fl_d_social: 'peace',
+    fc_d_holy: 'faith', fc_d_crown: 'crown', fc_d_modern: 'industry',
+    fu_d_greater: 'army', fu_d_quiet: 'wall', fu_d_technate: 'machine',
+    fh_d_serene: 'sea', fh_d_many: 'crowd', fh_d_sync: 'machine',
+  };
+  const WARSEA = { ca_d_freeworld: 1, ly_d_thalasso: 1, vs_d_seas: 1 };
+  const eachDest = (fn) => { for (const b in ID.FOCUS.nations) for (const f of ID.FOCUS.nations[b]) if (f.dest) fn(f); for (const k in ID.FOCUS.families) for (const f of ID.FOCUS.families[k]) if (f.dest) fn(f); };
+  eachDest((f) => { f.dest.art = ART[f.id] || 'parliament'; if (WARSEA[f.id]) f.dest.war = 1; });
 
   /* Destinies are a turning point, not a fortress: legitimacy and order from one wear off after ten
      years, defensive bonuses are capped, and every destiny makes the neighbours nervous. */

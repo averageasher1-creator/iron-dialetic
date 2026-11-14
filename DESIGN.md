@@ -92,6 +92,16 @@ with destinies of their own, so every country on every map has somewhere to go. 
 Two Continents also has a motto, an anthem (generated from its name), a short history and two
 national spirits; titles ("Victor over Hesperia", "Born of Revolution") accumulate as it plays.
 
+### Knowing what to do (added in session 6)
+A collapsing state should feel dangerous, never baffling. The **Report** reads the country the way a
+cabinet would: it ranks what is wrong, names the cause (the biggest drag on stability, the worst
+grievance of each angry faction, the weakest pillar of legitimacy) and attaches the levers that
+answer it. **Emergency measures** are those levers in programme form: short, repeatable, open only in
+the trouble they answer, and able to interrupt the long programme without wasting it. Ordinary
+dispatches no longer stop the clock; crises and history still do. Absolute monarchies and personal
+dictatorships render their own cult: the screen itself is propaganda, and at the height of it the
+numbers lie.
+
 ### Combat in five sentences
 Troops are a share of your population set by the mobilisation slider; soldiers are not
 workers. To attack, pick a neighbour you are at war with, set the commit slider, choose a
@@ -207,10 +217,11 @@ drum, brass.
 ```
 index.html            no build step; plain <script> tags, one global `ID`
 css/style.css         the whole interface
-fonts/                Barlow + Barlow Condensed (OFL)
+fonts/                Barlow + Barlow Condensed (OFL), Special Elite (Apache 2.0)
 js/core/util.js       RNG, noise, heap, formatting, calendar
 js/data/*.js          base (terrain, laws, buildings...), ideologies, names + scenario, events + decisions,
-                      focus (programme trees and the historical storyline)
+                      focus (programme trees and the historical storyline), destiny (identity, destinies,
+                      family trees), expand (emergency measures, home-front branches)
 js/sim/*.js           mapgen, world, combat, economy, politics, diplomacy, events, focus (programmes and
                       storyline engine), ai, game (loop, victory, saves)
 js/ui/render.js       canvas map: 1px-per-tile offscreen image, dirty-tile repaint, vector overlays
@@ -219,6 +230,10 @@ js/ui/flags.js        procedural flags, ideology emblems, dispatch poster banner
 js/ui/ui.js           top band, rail, selection card, attack bar, alerts, offers, dispatches, tooltips, keys
 js/ui/panels.js       State, Economy, Laws, War, Foreign, World, Handbook
 js/ui/programme.js    Programme panel, the programme tree, history timeline, handbook page
+js/ui/advice.js       the ministers' Report: ranked problems, causes and one-click levers
+js/ui/nation.js       Nation screen and superevents; scenes.js paints their scenes
+js/ui/tray.js         dispatch tray (ordinary dispatches wait while the clock runs)
+js/ui/madness.js      screen effects for absolute monarchs and personal dictators
 js/ui/screens.js      title, campaign setup, saves, settings, challenges, records, post-mortem, chronicle
 js/ui/tutorial.js     guided first campaign as Cassine
 js/ui/main.js         boot, main loop, pointer and wheel input

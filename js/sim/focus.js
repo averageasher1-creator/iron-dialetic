@@ -27,6 +27,7 @@
   function index() {
     all = {}; gen = {}; nat = {};
     for (const f of ID.FOCUS.general) { all[f.id] = f; gen[f.id] = f; f.tree = 'general'; }
+    for (const f of ID.FOCUS.crisis || []) { all[f.id] = f; f.tree = 'crisis'; f.crisis = 1; }
     for (const b in ID.FOCUS.nations) { nat[b] = {}; for (const f of ID.FOCUS.nations[b]) { all[f.id] = f; nat[b][f.id] = f; f.tree = b; } }
     for (const k in ID.FOCUS.families || {}) for (const f of ID.FOCUS.families[k]) { all[f.id] = f; f.tree = 'fam:' + k; }
   }
@@ -41,6 +42,7 @@
     if (n.tree && ID.FOCUS.nations[n.tree]) out.push({ key: 'nat', name: n.adj + ' programme', list: ID.FOCUS.nations[n.tree] });
     else { const fam = ID.ideo(n).family, L = ID.FOCUS.families && ID.FOCUS.families[fam]; if (L) out.push({ key: 'nat', name: n.adj + ' programme', fam, list: L }); }
     out.push({ key: 'gen', name: 'General programme', list: ID.FOCUS.general });
+    if (ID.FOCUS.crisis) { if (!all) index(); out.push({ key: 'cri', name: 'Emergency measures', list: ID.FOCUS.crisis }); }
     return out;
   };
   Fo.days = (G, n, f) => Math.round((f.days || 120) * (n.trans > 0 ? 1.25 : 1));
@@ -55,7 +57,12 @@
     const p = Fo.ensure(n);
     if (p.done[f.id] != null && !f.repeat) return 'Completed.';
     if (f.repeat && p.done[f.id] != null && G.tick - p.done[f.id] < f.repeat * 360) return 'Can be repeated from ' + ID.dateOf(p.done[f.id] + f.repeat * 360).short + '.';
-    if (!ignoreCur && p.cur) return p.cur === f.id ? 'Under way.' : 'Another programme is under way.';
+    if (!ignoreCur && p.cur) {
+      const c = Fo.def(p.cur);
+      // an emergency measure may interrupt an ordinary programme, which is shelved with its progress kept
+      if (p.cur === f.id) return 'Under way.';
+      if (!(f.crisis && c && !c.crisis)) return f.crisis ? 'Another emergency measure is under way.' : 'Another programme is under way.';
+    }
     if (f.excl) for (const x of f.excl) if (p.done[x] != null) return 'Ruled out: you chose ' + Fo.nm(Fo.def(x), n) + '.';
     if (f.dest && n.destiny && !n.destiny.lapsed && n.destiny.id !== f.id) return 'You have already reached a destiny: ' + n.destiny.name + '.';
     if (f.req) { const miss = f.req.filter((x) => p.done[x] == null); if (miss.length) return 'Needs ' + names(miss, n) + '.'; }
@@ -97,11 +104,21 @@
     const f = Fo.def(id); if (!f) return 'Unknown programme.';
     const p = Fo.ensure(n);
     const why = Fo.block(G, n, f); if (why) return why;
+    if (f.crisis && p.cur) p.shelf = { id: p.cur, start: p.start, end: p.end, at: G.tick };
     p.cur = f.id; p.start = G.tick; p.end = G.tick + Fo.days(G, n, f);
     if (n.id === G.player) ID.sfx(G, 'stamp');
     return '';
   };
-  Fo.cancel = function (G, n) { const p = Fo.ensure(n); p.cur = null; };
+  /* Take the shelved programme back up where it was left. */
+  function resume(G, n) {
+    const p = n.path, s = p && p.shelf; if (!s) return;
+    p.shelf = null;
+    const f = Fo.def(s.id); if (!f || p.cur) return;
+    p.cur = s.id; p.start = G.tick - (s.at - s.start); p.end = G.tick + Math.max(1, s.end - s.at);
+    if (n.id === G.player) ID.news(G, 'Work resumes on ' + Fo.nm(f, n) + '.', 'pol', n.id);
+  }
+  Fo.shelved = (n) => (n.path && n.path.shelf ? Fo.def(n.path.shelf.id) : null);
+  Fo.cancel = function (G, n) { const p = Fo.ensure(n); p.cur = null; resume(G, n); };
 
   Fo.complete = function (G, n, f) {
     const p = Fo.ensure(n);
@@ -116,6 +133,7 @@
     ID.Events.applyFx(G, n, f.fx, { focus: f.id });
     if (f.dest && n.alive) Fo.destiny(G, n, f);
     if (n.alive) ID.Combat.refresh(G, n);
+    if (n.alive) resume(G, n);
     if (isP) G.uiDirty = true;
   };
 
@@ -124,8 +142,8 @@
       if (!n || !n.alive || !n.path || !n.path.cur || G.tick < n.path.end) continue;
       const f = Fo.def(n.path.cur); if (!f) { n.path.cur = null; continue; }
       // conditions can lapse while a programme runs (a target vanishes, a war starts)
-      const why = Fo.block(G, n, f, true);
-      if (why && why !== 'Completed.') { n.path.cur = null; if (n.id === G.player) ID.news(G, 'Programme abandoned: ' + f.name + '. ' + why, 'bad', n.id); continue; }
+      const why = f.crisis ? '' : Fo.block(G, n, f, true); // an emergency measure is finished even if the emergency has passed
+      if (why && why !== 'Completed.') { n.path.cur = null; if (n.id === G.player) ID.news(G, 'Programme abandoned: ' + Fo.nm(f, n) + '. ' + why, 'bad', n.id); resume(G, n); continue; }
       Fo.complete(G, n, f);
     }
   };
@@ -189,8 +207,8 @@
     if (n.a.reformer == null) n.a.reformer = G.rng.chance(0.3) ? 1 : 0; // some regimes set out to transform themselves; most do not
     const wantArmy = n.nwars || n.a.threatened, hungry = n.foodBal < 1.02;
     const f = G.rng.weighted(av, (x) => {
-      let w = x.tree === 'general' ? 1 : 3;
-      if (x.tree !== 'general' && hist) w = x.hist ? 40 : 0;
+      let w = x.tree === 'general' ? 1 : x.crisis ? 5 : 3;
+      if (x.tree !== 'general' && !x.crisis && hist) w = x.hist ? 40 : 0;
       if (x.repeat) w *= 0.45;
       if (x.dest) w *= 3;
       if (typeof x.ai === 'function') w *= x.ai(n, G); else if (x.ai != null) w *= x.ai;
@@ -308,7 +326,7 @@
     if (!W || !L || !L.alive || W === L) return;
     for (let i = 0; i < G.N; i++) if (G.owner[i] === L.id) ID.setOwner(G, i, W.id);
     for (let p = 1; p < G.provinces.length; p++) { const Pr = G.provinces[p]; if (Pr.core === L.id) Pr.core = W.id; }
-    W.pop += L.pop * 0.9; W.troops += L.troops * 0.7; W.gold += Math.max(0, L.gold) * 0.5; W.threat += 15;
+    W.troops += L.troops * 0.7; // the people came with the land W.gold += Math.max(0, L.gold) * 0.5; W.threat += 15;
     ID.headline(G, { kicker: 'Union', title: L.base + ' joins ' + W.base, sub: L.name + ' is absorbed into ' + W.name + ' without a shot fired.', a: W.id, b: L.id, tone: W.id === G.player ? 'good' : 'bad' });
     const c0 = G.chronicle.length;
     D().eliminate(G, L, W, true);

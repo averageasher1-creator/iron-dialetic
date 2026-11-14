@@ -293,9 +293,54 @@ writing in big strategy mods. What exists:
 - Tests: `/home/claude/scripts/nation.js`, `/home/claude/scripts/super.js` (WHO=Cassine
   DEST=ca_d_freeworld to force a destiny), `node tools/history.js` now lists destinies reached.
 
+## Session 6: superevents, civil wars, the tray, autocrat madness, the Report, emergency measures
+
+User feedback after playing Aurelia: superevents "look lame"; a civil war went wrong (a rebel rump
+on a few provinces kept 600k people, double the player's); expand the programme trees; the
+country "just crumbling and not knowing what to do". Then: absolute monarchs and absolute
+dictators should "go crazy with pop ups, distortions and visuals", and the UI blocks the game.
+
+- **Population follows land.** `ID.setOwner(G, i, to, keepPop)` moves people with each tile
+  (`pop × share of populated land`, 85% arrives); civil wars and secessions pass `keepPop`
+  because they move pop themselves. Population above the cap decays faster (0.006/day). A state
+  with no tiles is eliminated monthly (the player gets `defeat 'disintegration'`). Provinces of
+  a state in civil war cannot secede back to its parent. Diagnostic: `/tmp/diag/cw.js`.
+- **Superevents** (`ui/nation.js` `UI.showSuper`, `ui/scenes.js`): a dossier layout with a
+  painted scene per destiny/beat (`ID.Scene.svg(theme, seed, {flag, war})`, 17 themes; destiny
+  → theme in `ART` in `data/destiny.js`), typewriter quote (Special Elite font, Apache 2.0), stamp
+  motto, anthem or sting. Story superevents use class `hist`.
+- **Dispatch tray** (`ui/tray.js`): ordinary dispatches wait at the left of the map while time
+  runs (`G.tray`; `Ev.urgent(def)` = `def.sys || def.story` still stops the clock). Only the
+  newest card shows its choices; left three months, `Gm.month` has the ministers settle it
+  (`Ev.choose(G, -1, idx, true)`). Settings: "Ordinary dispatches" (tray / stop the clock).
+  Headlines are shorter and click-through.
+- **Autocrat madness** (`ui/madness.js`): for `absmon` (crown) and `personalist` (leader).
+  Level 0–100 from authority, tradition or charisma, regime age, press and security laws,
+  leader's age, destiny, low stability; stages at 22/44/64/80. Tint, vignette, scanlines,
+  watermark, slogan popups (max 2 on screen, 4 at stage 4), lying stat values, glitches and a
+  full-screen flash at stage 4. Runs only while unpaused with no modal. Settings: "Regime
+  distortion". Respects reduced motion.
+- **Ministers' report** (`ui/advice.js`, rail tab **Report**, key R): `ID.Advice.list(G, n)`
+  ranks problems (civil war, collapsing front, stability with its biggest drag, angry factions
+  with their worst grievances, weakest legitimacy pillar, drift, coups, elections, food, money,
+  inflation, war weariness, unrest, strikes, idle programme) and attaches one-click levers:
+  decisions, emergency measures, peace offers, the panel that holds the lever. Urgent items
+  (sev ≥ 70) light the rail pip and add a "Ministers’ report" alert.
+- **Emergency measures** (`data/expand.js` `ID.FOCUS.crisis`, tree key `cri`, `f.tree =
+  'crisis'`, `f.crisis = 1`): 16 short repeatable programmes gated by `can` on the trouble they
+  answer. Starting one while an ordinary programme runs **shelves** it (`p.shelf = {id, start,
+  end, at}`); `resume()` in `sim/focus.js` takes it back up on completion, cancel or abandonment.
+  A measure is never abandoned because the trouble passed. AI weight 5 when idle.
+- **Home-front branches** (`data/expand.js` `home()`): every national tree gains root → choice
+  of two (exclusive) → capstone, placed in a new column to the right (68 programmes). Not hist,
+  so historical-mode AI does not take them.
+- Tests: `/home/claude/scripts/report.js`, `report_all.js` (Report for all 17 nations, no
+  errors), `mad.js` (WHO=Pavon), `flows.js`, `hist.js`; `/tmp/diag/cri.js` (shelving).
+  AI-played historical soak after these changes: 1 win, 7 survive, 9 fall.
+
 ## Published (end of session 2)
 
-- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `1794611680-2300` after session 5,
+- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `LIVEVER` after session 6,
   published from files (index.html, css, js, fonts). To update after edits, republish with
   `publish_files` using the slug and the live version from `get_artifact`.
 - GitHub Pages zip: `/home/claude/iron-dialectic.zip` (rebuild with the zip command in the session log:

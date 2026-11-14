@@ -57,31 +57,41 @@
   };
 
   /* ---------------------------------------------------------------- superevents */
-  function rays(col) {
-    let r = ''; for (let k = 0; k < 24; k++) { const a0 = (k / 24) * Math.PI * 2, a1 = a0 + Math.PI / 24; r += '<path d="M500 420L' + (500 + Math.cos(a0) * 1400).toFixed(0) + ' ' + (420 + Math.sin(a0) * 1400).toFixed(0) + 'L' + (500 + Math.cos(a1) * 1400).toFixed(0) + ' ' + (420 + Math.sin(a1) * 1400).toFixed(0) + 'Z"/>'; }
-    return '<svg class="srays" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid slice"><rect width="1000" height="800" fill="' + col + '"/><g fill="#17140f" opacity=".2">' + r + '</g></svg>';
-  }
+  const flagSvg = (n) => ID.Flags.svg(n).replace(/var\(--bg\)/g, n.destiny && !n.destiny.lapsed && n.destiny.flag ? (n.destiny.flag.p === 'canton' || n.destiny.flag.p === 'stripes' ? n.destiny.flag.c || n.destiny.flag.a : n.destiny.flag.a) : hex(n.color));
+  let superNo = 0;
   UI.showSuper = function () {
     const G = UI.G, s = G.superq[0]; if (!s) return;
+    superNo++;
+    const when = ID.dateOf(G.tick), no = 'No. ' + String(1000 + ((G.tick * 7 + superNo * 131) % 9000));
     let h = '';
     if (s.kind === 'destiny') {
       const n = G.nations[s.nation], f = ID.Focus.def(s.focus);
       if (!n || !f || !f.dest) { G.superq.shift(); return; }
       const d = f.dest, nm = S(d.name, n);
-      h = '<div class="super dest">' + rays(hex(n.color)) + '<div class="sin"><div class="skick">Destiny</div>' + bigFlag(n) + '<h1>' + esc(ID.Focus.nm(f, n)) + '</h1><div class="sname">' + esc(nm) + '</div>' +
-        '<blockquote>' + esc(S(d.quote, n)) + '</blockquote><cite>' + esc(S(d.by, n)) + '</cite><p>' + esc(S(d.text, n)) + '</p><div class="smotto">' + esc(S(d.motto, n)) + '</div>' +
-        '<button class="b red big" data-act="superOk">Long live the ' + esc(nm) + '</button></div></div>';
+      const lum = (c) => (c && c[0] === '#' ? parseInt(c.substr(1, 2), 16) * 0.3 + parseInt(c.substr(3, 2), 16) * 0.59 + parseInt(c.substr(5, 2), 16) * 0.11 : 0);
+      const fc = d.flag ? (lum(d.flag.a) > 70 ? d.flag.a : d.flag.b || d.flag.e || d.flag.a) : hex(n.color);
+      const art = ID.Scene.svg(d.art || 'parliament', f.id, { n: fc, flag: fc, war: d.war });
+      h = '<div class="super dest"><div class="splate">' +
+        '<div class="shead"><span class="skick">Destiny</span><span class="sdate">' + esc(n.adj) + ' · ' + esc(when.str) + '</span><span class="sp"></span><span class="sno">' + no + '</span></div>' +
+        '<h1>' + esc(ID.Focus.nm(f, n)) + '</h1>' +
+        '<div class="sframe">' + art + '<div class="sflagw">' + flagSvg(n) + '</div></div>' +
+        '<div class="sbody"><div class="sname">' + esc(nm) + '</div><div><blockquote>' + esc(S(d.quote, n)) + '</blockquote><cite>' + esc(S(d.by, n)) + '</cite><p>' + esc(S(d.text, n)) + '</p></div>' +
+        '<div class="sside"><div class="smotto">' + esc(S(d.motto, n)) + '</div><button class="b red big" data-act="superOk">Long live the ' + esc(nm) + '</button></div></div></div></div>';
       UI.modal(h, 'super');
       ID.Audio.unlock(); ID.Audio.anthem(anthemSeed(n), ID.ideo(n).family);
-      if (ID.Render && ID.Render.shake) ID.Render.shake(6);
     } else {
       const b = ID.Story.beat(s.id); if (!b || !b.sup) { G.superq.shift(); return; }
-      h = '<div class="super hist">' + rays('#5a1712') + '<div class="sin"><div class="skick">History · ' + ID.dateOf(G.tick).str + '</div><h1>' + esc(b.title) + '</h1>' +
-        '<blockquote>' + esc(b.sup.quote) + '</blockquote><cite>' + esc(b.sup.by) + '</cite><p>' + esc(b.sup.text) + '</p>' +
-        '<button class="b red big" data-act="superOk">' + esc(b.sup.ok || 'So it begins') + '</button></div></div>';
+      const me = G.nations[G.player];
+      const art = ID.Scene.svg(b.sup.art || 'war', b.id, { n: me ? hex(me.color) : '#8a2a20', war: 1 });
+      h = '<div class="super hist"><div class="splate">' +
+        '<div class="shead"><span class="skick">History</span><span class="sdate">' + esc(when.str) + '</span><span class="sp"></span><span class="sno">' + no + '</span></div>' +
+        '<h1>' + esc(b.title) + '</h1><div class="sframe">' + art + '</div>' +
+        '<div class="sbody"><div><blockquote>' + esc(b.sup.quote) + '</blockquote><cite>' + esc(b.sup.by) + '</cite><p>' + esc(b.sup.text) + '</p></div>' +
+        '<div class="sside"><button class="b red big" data-act="superOk">' + esc(b.sup.ok || 'So it begins') + '</button></div></div></div></div>';
       UI.modal(h, 'super');
       ID.Audio.play(b.sup.sound || 'era'); if (ID.Music && ID.Music.sting) ID.Music.sting('war');
     }
+    if (ID.Render && ID.Render.shake) ID.Render.shake(5);
   };
   acts.superOk = () => { const G = UI.G; if (G.superq && G.superq.length) G.superq.shift(); ID.Audio.play('stamp'); UI.closeModal(); };
 })();

@@ -1,6 +1,6 @@
 'use strict';
 const path = require('path'); const root = path.join(__dirname, '..', 'js'); globalThis.ID = {};
-for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/focus', 'data/destiny', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
+for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/focus', 'data/destiny', 'data/expand', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
 const ID = globalThis.ID;
 const want = (process.argv[2] || 'ansyn,agrarian,council,ancom,natpop,minarchy,mao,trot').split(',');
 const seeds = [1, 7920, 15839, 23758, 31677, 39596];

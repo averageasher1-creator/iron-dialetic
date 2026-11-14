@@ -517,7 +517,7 @@
     const cap = ID.popCap(n);
     if (n.pop < 1) n.pop = 1;
     const g = 0.00015 * (0.55 + n.ls / 110) * (n.famine ? 0 : 1) * (1 + ID.mod(n, 'growth'));
-    if (n.pop < cap) n.pop += n.pop * g * (1 - n.pop / cap); else n.pop -= (n.pop - cap) * 0.002;
+    if (n.pop < cap) n.pop += n.pop * g * (1 - n.pop / cap); else n.pop -= (n.pop - cap) * 0.006;
     const r = ID.RECRUIT[n.laws.recruit];
     if (n.troops > n.pop * 0.6) n.troops = n.pop * 0.6;
     if (r.hire) { if (n.gold < 0 && n.troops > 0) n.troops *= 0.995; return; }

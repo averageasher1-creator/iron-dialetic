@@ -37,10 +37,14 @@
       const pr = F.progress(G, n), left = Math.max(0, p.end - G.tick);
       h += sec('Under way', '<div class="foc-cur"><h4>' + esc(NM(cur, n)) + histTag(G, cur) + destTag(cur) + '</h4><p>' + esc(DS(cur, n)) + '</p>' + UI.bar(pr, 1, 'r') +
         '<div class="row nw" style="margin-top:6px"><span class="dim" style="font-size:13.5px">' + left + ' days left · completes ' + ID.dateOf(p.end).short + '</span><span class="sp"></span>' + btn('Abandon', 'cancelFocus', null, { cls: 'sm ghost', tip: 'Stop this programme. The progress is lost.' }) + '</div>' +
-        '<div class="fxl">' + UI.fxHtml(cur.fx, n) + '</div></div>');
+        '<div class="fxl">' + UI.fxHtml(cur.fx, n) + '</div>' + (p.shelf && F.shelved(n) ? '<div class="note" style="margin:8px 0 0">Shelved while the emergency lasts: <b>' + esc(NM(F.shelved(n), n)) + '</b>, ' + Math.max(1, p.shelf.end - p.shelf.at) + ' days left. It resumes when this measure is done.</div>' : '') + '</div>');
     } else h += sec('Under way', '<div class="note red">No programme under way. Every month without one is wasted. Start one below or open the tree.</div>');
     h += '<div class="row" style="margin:2px 0 14px">' + btn('Open the programme tree', 'tree', 'nat', { cls: 'red', tip: 'The full tree: every programme, what it needs, and which paths rule each other out.' }) + '</div>';
-    const av = F.available(G, n);
+    const all = F.available(G, n), av = all.filter((f) => !f.crisis), em = all.filter((f) => f.crisis);
+    const emOff = cur && cur.crisis ? 'Another emergency measure is under way.' : '';
+    if (em.length) h += sec('Emergency measures', '<p class="dim" style="font-size:13.5px;margin:0 0 8px">Short measures for the trouble you are in. Starting one shelves the programme under way; its progress is kept.</p>' + em.map((f) => '<div class="dec em"><h4>' + esc(NM(f, n)) + '</h4><p>' + esc(DS(f, n)) + '</p><div class="cost">' + F.days(G, n, f) + ' days' +
+      ' <span style="display:inline-flex;flex-wrap:wrap;gap:0 10px;font-weight:600">' + UI.fxHtml(f.fx, n) + '</span></div>' +
+      btn(cur && !cur.crisis ? 'Shelve and start' : 'Start', 'startFocus', f.id, { cls: 'sm red', off: emOff, tip: focusTip(G, n, f) + (cur && !cur.crisis ? '<hr>' + esc(NM(cur, n)) + ' is shelved, with its progress kept, until this is done.' : '') }) + '</div>').join(''), em.length + ' open');
     h += sec('Can start now', av.length ? av.map((f) => '<div class="dec' + (f.dest ? ' dest' : '') + '"><h4>' + esc(NM(f, n)) + histTag(G, f) + destTag(f) + '</h4><p>' + esc(DS(f, n)) + '</p><div class="cost">' + F.days(G, n, f) + ' days' + (f.tree === 'general' ? ' · general' : '') +
       ' <span style="display:inline-flex;flex-wrap:wrap;gap:0 10px;font-weight:600">' + UI.fxHtml(f.fx, n) + '</span></div>' +
       btn('Start', 'startFocus', f.id, { cls: 'sm', off: cur ? 'Another programme is under way. Abandon it first.' : '', tip: focusTip(G, n, f) }) + '</div>').join('')
@@ -90,17 +94,18 @@
     for (const f of T.list) {
       const st = F.state(G, n, f), [x, y] = pos(f);
       const pr = st === 'cur' ? F.progress(G, n) : 0;
-      const canStart = st === 'avail' && !cur;
+      const canStart = st === 'avail' && (!cur || (f.crisis && !cur.crisis));
       const meta = f.dest && st !== 'cur' ? (st === 'done' ? '★ ' : '→ ') + ID.Focus.sub(f.dest.name, n) : st === 'done' ? 'done ' + ID.dateOf(n.path.done[f.id]).short : st === 'cur' ? Math.round(pr * 100) + '%' : st === 'excl' ? 'ruled out' : (f.year && ID.yearOf(G.tick) < f.year ? 'from ' + f.year : F.days(G, n, f) + ' days');
       nodes += '<button class="fn ' + st + (isHist(G, f) ? ' h' : '') + (f.dest ? ' dest' : '') + (canStart ? ' go' : '') + '" style="left:' + x + 'px;top:' + y + 'px;width:' + NW + 'px;height:' + NH + 'px"' +
-        (canStart ? ' data-act="startFocus" data-a=\'"' + f.id + '"\'' : '') + tip(focusTip(G, n, f) + (canStart ? '<hr><b>Click to start.</b>' : st === 'avail' && cur ? '<hr><span class="dim">Another programme is under way.</span>' : '')) + '>' +
+        (canStart ? ' data-act="startFocus" data-a=\'"' + f.id + '"\'' : '') + tip(focusTip(G, n, f) + (canStart ? '<hr><b>Click to start.</b>' + (cur ? ' ' + esc(NM(cur, n)) + ' is shelved until it is done.' : '') : st === 'avail' && cur ? '<hr><span class="dim">Another programme is under way.</span>' : '')) + '>' +
         '<b>' + esc(NM(f, n)) + '</b><small>' + esc(meta) + '</small>' + (st === 'cur' ? '<i class="pg" style="width:' + (pr * 100).toFixed(1) + '%"></i>' : '') + '</button>';
     }
     const tabs = trees.map((t) => '<button class="' + (t.key === T.key ? 'on' : '') + '" data-act="tree" data-a=\'"' + t.key + '"\'>' + esc(t.name) + '</button>').join('');
     const legend = '<div class="tlg"><span class="fn avail"></span>open <span class="fn cur"></span>under way <span class="fn done"></span>done <span class="fn locked"></span>locked <span class="fn excl"></span>ruled out <span class="fn dest avail"></span>destiny' + (G.historical ? ' <span class="fn h avail"></span>as it happened' : '') + '</div>';
     return '<div class="dlg xwide tree"><div class="dhd"><div class="k">PROGRAMME</div><div class="d">' + esc(n.name) + ' · ' + ID.dateOf(G.tick).str + '</div><button class="x" data-act="closeModal"' + tip('Close (Esc)') + '>✕</button></div>' +
       '<div class="dbd"><div class="row nw" style="margin-bottom:10px"><div class="seg" style="flex:none">' + tabs + '</div><span class="sp"></span>' + legend + '</div>' +
-      (cur ? '<div class="note">Under way: <b>' + esc(NM(cur, n)) + '</b>, completes ' + ID.dateOf(n.path.end).short + '. One programme runs at a time.</div>' : '<div class="note red">No programme under way. Click an open programme to start it.</div>') +
+      (T.key === 'cri' ? '<div class="note">Emergency measures open only when the trouble they answer is upon you, and can be taken again after a few years. Starting one shelves the programme under way, progress kept, until the measure is done.</div>' :
+      cur ? '<div class="note">Under way: <b>' + esc(NM(cur, n)) + '</b>, completes ' + ID.dateOf(n.path.end).short + '. One programme runs at a time.</div>' : '<div class="note red">No programme under way. Click an open programme to start it.</div>') +
       '<div class="tscroll"><div class="tcanvas" style="width:' + W + 'px;height:' + H + 'px"><svg width="' + W + '" height="' + H + '">' + svg + '</svg>' + nodes + '</div></div></div></div>';
   }
   UI.treeKey = 'nat';
@@ -121,6 +126,9 @@
     h += sec('The trees', '<ul><li>The <b>general programme</b> is open to every state: industry, farming, the army, the state, foreign policy, and a few campaigns you can repeat.</li>' +
       '<li>On <b>The Two Continents</b>, each country also has a <b>national programme</b> of its own. Its branches are real choices: some rule each other out, some change the system of government, some start wars.</li>' +
       '<li>A programme can wait on a year, on earlier programmes, or on the regime in power. Hover any programme to see why it is locked.</li></ul>');
+    h += sec('Emergency measures', '<ul><li>A third tree, open to every state, of short measures that open only when the trouble they answer is upon you: hunger, an empty treasury, unrest, a collapsing government, a drifting regime, restless officers, a losing war, civil war.</li>' +
+      '<li>Starting one <b>shelves</b> the programme under way. Its progress is kept, and work resumes when the measure is done.</li>' +
+      '<li>Each can be taken again after a few years. The <b>Report</b> (R) offers the ones that fit your trouble.</li></ul>');
     h += sec('Destinies', '<ul><li>Every path through a national programme ends in a <b>destiny</b>, shown in gold on the tree. Reaching one renames the state, raises a new flag, gives it a new motto and earns it a title.</li>' +
       '<li>A state can reach one destiny. Choosing a path closes the others.</li>' +
       '<li>A destiny belongs to the regime that reached it. If the system of government changes, the old name and flag go with it.</li>' +

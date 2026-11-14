@@ -7,7 +7,7 @@
   const $ = (s) => document.querySelector(s);
   UI.$ = $;
   UI.G = null; UI.tab = null; UI.sel = -1; UI.focusNation = 0; UI.commit = 0.5; UI.style = 'advance'; UI.aim = null; UI.helpPage = 'play';
-  UI.settings = { vol: 0.5, muted: false, pauseOnEvent: true, blocs: true, music: 0.35, musicOn: true };
+  UI.settings = { vol: 0.5, muted: false, pauseOnEvent: true, blocs: true, music: 0.35, musicOn: true, trayEvents: true, madness: true };
   UI.busy = false; UI.pointerDown = false; UI.modalKind = null;
   const P = () => UI.G.nations[UI.G.player];
   UI.P = P;
@@ -166,6 +166,7 @@
 
   /* ---------------------------------------------------------------- top band */
   const ICON = {
+    brief: '<svg viewBox="0 0 24 24"><path d="M5 2h11l4 4v16H5zM15 2v5h5M8.5 11h8M8.5 15h8M8.5 19h5"/></svg>',
     gov: '<svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M2 10h20L12 3z"/></svg>',
     eco: '<svg viewBox="0 0 24 24"><path d="M3 21V11l5 3V11l5 3V4h4v17zM3 21h18"/></svg>',
     law: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg>',
@@ -176,7 +177,7 @@
     menu: '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
     prog: '<svg viewBox="0 0 24 24"><path d="M5 22V3M5 4h13l-3 4.5 3 4.5H5"/></svg>',
   };
-  const TABS = [['gov', 'State', 'G'], ['eco', 'Economy', 'E'], ['law', 'Laws', 'L'], ['prog', 'Programme', 'P'], ['mil', 'War', 'M'], ['for', 'Foreign', 'F'], ['world', 'World', 'O'], ['help', 'Handbook', 'H']];
+  const TABS = [['brief', 'Report', 'R'], ['gov', 'State', 'G'], ['eco', 'Economy', 'E'], ['law', 'Laws', 'L'], ['prog', 'Programme', 'P'], ['mil', 'War', 'M'], ['for', 'Foreign', 'F'], ['world', 'World', 'O'], ['help', 'Handbook', 'H']];
   UI.TABS = TABS;
   UI.renderRail = function () {
     $('#rail').innerHTML = TABS.map((t) => '<button class="tab' + (UI.tab === t[0] ? ' on' : '') + '" data-act="tab" data-a=\'"' + t[0] + '"\' id="tab-' + t[0] + '"' + tip('<b>' + t[1] + '</b> <span class="dim">(' + t[2] + ')</span>') + '>' + ICON[t[0]] + '<span>' + t[1] + '</span><i class="pip" hidden></i>' + (t[0] === 'prog' ? '<i class="tprog"><u id="tprog"></u></i>' : '') + '</button>').join('') +
@@ -367,6 +368,8 @@
   /* ---------------------------------------------------------------- alerts */
   UI.alerts = function () {
     const G = UI.G, n = P(), I = ID.ideo(n), out = []; const add = (text, tab, red, act, arg) => out.push({ text, tab, red, act, arg });
+    const urg = ID.Advice ? ID.Advice.urgent(G, n) : 0;
+    if (urg) add('<b>Ministers’ report</b>: ' + urg + ' urgent matter' + (urg > 1 ? 's' : '') + ', with remedies', 'brief', true);
     if (n.nwars) {
       let inc = 0; for (const a of G.attacks) if (a.to === n.id) inc += a.troops;
       if (inc > 1) add('<b>Under attack</b> by ' + ID.fmtPop(inc) + ' troops', 'mil', true);
@@ -441,7 +444,8 @@
   };
   UI.tickHeadlines = function (dt) {
     const G = UI.G;
-    if (hlEl && !hlEl.hidden) { hlT += dt; if (hlT > 4.6) { hlEl.classList.remove('on'); hlEl.hidden = true; } return; }
+    if (hlEl && !hlEl.hidden) { hlT += dt; if (hlT > 3.4) { hlEl.classList.remove('on'); hlEl.hidden = true; } return; }
+    if (G.headlines && G.headlines.length > 2) G.headlines.splice(0, G.headlines.length - 2); // only the latest news makes the front page
     if (G.headlines && G.headlines.length && UI.modalKind !== 'end') UI.headline(G.headlines.shift());
   };
   UI.hideHeadline = () => { if (hlEl) hlEl.hidden = true; };
@@ -471,6 +475,8 @@
       if (big && (R.mode === 'stability' || R.mode === 'opposition')) G.dirtyAll = true;
     }
     UI.tickHeadlines(dt);
+    if (tC > 0.5) { tC = 0; UI.renderTray(); }
+    if (ID.Madness) ID.Madness.frame(G, dt);
     if (G.superq && G.superq.length && !UI.modalKind && !G.over) UI.showSuper();
     if (G.evq.length && !UI.modalKind && !G.over) UI.showEvent();
     if (G.over && !UI.overShown) { if (UI.modalKind === 'event' || UI.modalKind === 'menu') UI.closeModal(); G.evq.length = 0; if (!UI.modalKind) { UI.overShown = true; ID.Screens.end(G); } }

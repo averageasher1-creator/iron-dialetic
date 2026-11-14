@@ -97,10 +97,17 @@
   };
 
   /* ---------------------------------------------------------------- events */
-  Ev.pending = (G, id) => G.evq.some((e) => e.id === id);
+  Ev.pending = (G, id) => G.evq.some((e) => e.id === id) || (G.tray || []).some((e) => e.id === id);
+  /* Ordinary dispatches wait in a tray beside the map while the game runs; urgent ones (sys, story)
+     stop the clock. G.trayEvents is set by the interface from the player's settings. */
+  Ev.urgent = (def) => !!(def.sys || def.story);
   Ev.queue = function (G, n, id, ctx) {
     const def = Ev.def(id); if (!def) return;
-    if (n.id === G.player && !G.autoPlayer) { G.evq.push({ id, n: n.id, ctx: ctx || {}, t: G.tick }); ID.sfx(G, def.sfx || 'event'); }
+    if (n.id === G.player && !G.autoPlayer) {
+      const e = { id, n: n.id, ctx: ctx || {}, t: G.tick };
+      if (G.trayEvents && !Ev.urgent(def)) { (G.tray = G.tray || []).push(e); G.uiDirty = true; } else G.evq.push(e);
+      ID.sfx(G, def.sfx || 'event');
+    }
     else Ev.auto(G, n, def, ctx || {});
   };
   Ev.options = function (G, n, def, ctx) {
@@ -114,11 +121,13 @@
     const o = h || G.rng.weighted(opts, (x) => (typeof x.ai === 'function' ? x.ai(n, G, ctx) : x.ai != null ? x.ai : 1)) || opts[0];
     Ev.applyFx(G, n, typeof o.fx === 'function' ? o.fx(n, G, ctx) : o.fx, ctx);
   };
-  /* Player picks option k of the event at the head of the queue. */
-  Ev.choose = function (G, k) {
-    const e = G.evq.shift(); if (!e) return;
-    const n = G.nations[e.n], def = Ev.def(e.id); if (!n || !def) return;
-    const opts = Ev.options(G, n, def, e.ctx); const o = opts[k] || opts[0];
+  /* Player picks option k of the event at the head of the queue (or of tray entry idx). */
+  Ev.choose = function (G, k, idx, byMinisters) {
+    const e = idx != null ? (G.tray || []).splice(idx, 1)[0] : G.evq.shift(); if (!e) return;
+    const n = G.nations[e.n], def = Ev.def(e.id); if (!n || !def || !n.alive) return;
+    const opts = Ev.options(G, n, def, e.ctx); if (!opts.length) return;
+    let o = opts[k] || opts[0];
+    if (byMinisters) { o = G.rng.weighted(opts, (x) => (typeof x.ai === 'function' ? x.ai(n, G, e.ctx) : x.ai != null ? x.ai : 1)) || opts[0]; ID.news(G, 'Left unanswered, “' + Ev.txt(def.title, G, n, e.ctx) + '” was settled by your ministers: ' + Ev.txt(o.label, G, n, e.ctx) + '.', 'pol', n.id); }
     Ev.applyFx(G, n, typeof o.fx === 'function' ? o.fx(n, G, e.ctx) : o.fx, e.ctx);
     n.hist = n.hist || []; n.hist.push({ t: G.tick, id: e.id, title: Ev.txt(def.title, G, n, e.ctx), pick: Ev.txt(o.label, G, n, e.ctx) }); if (n.hist.length > 60) n.hist.shift();
   };

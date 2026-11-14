@@ -32,10 +32,10 @@ Everything works with a trackpad. Nothing needs a right-click.
 | Attack the selected enemy, or expand into selected hinterland | `Enter`, the Attack/Expand button, or double-click |
 | Artillery barrage / air raid | click the order on the war bar, then click enemy land (`Esc` cancels) |
 | Pause / speed | `Space` / `1`–`5` |
-| Panels | `G` state · `E` economy · `L` laws · `P` programme · `M` war · `F` foreign · `O` world · `H` handbook |
+| Panels | `R` ministers' report · `G` state · `E` economy · `L` laws · `P` programme · `M` war · `F` foreign · `O` world · `H` handbook |
 | Map modes | `Z` political · `X` ideology · `C` opposition · `V` unrest · `B` supply · `N` terrain |
 | Close / menu | `Esc` |
-| Answer a dispatch | click an option, or press its number |
+| Answer a dispatch | click an option (crises stop the clock; ordinary dispatches wait at the left of the map), or press its number |
 
 Hover anything for an explanation. If two-finger scrolling zooms instead of panning on your
 machine, change it in **Settings**.
@@ -58,6 +58,12 @@ machine, change it in **Settings**.
   the 17 countries of *The Two Continents* has its own branching tree, with paths that rule each
   other out, change the system of government or start wars; every state shares a general tree
   for industry, farming, the army, the state and foreign policy.
+- **The ministers' report**: when the state starts to crumble, open the Report (`R`). It names
+  each problem, what is causing it, and the levers that answer it, one click away.
+- **Emergency measures**: a tree of short measures that open only in trouble (hunger, an empty
+  treasury, unrest, a falling government, a drifting regime, restless officers, a losing war,
+  civil war). Starting one shelves the programme under way without losing its progress.
+- **Home fronts**: every national tree has a domestic branch with a choice of two roads.
 - **Destinies**: every country's programme branches into three or more endings. Reach one and
   the state takes a new name and a new flag, with a moment to match ("Ring the bells backward. We
   are returning to the hour before the fall."). Every country on every map has a tree: the 17 of
@@ -74,6 +80,9 @@ machine, change it in **Settings**.
 - **War you can see and hear**: shell bursts and smoke along every front, attack arrows with
   troop counts, captured-tile counters, screen shake, a generative score that turns martial in
   wartime, and newspaper front pages for wars, revolutions, fallen capitals and new eras.
+- **Absolute rule looks the part**: under an absolute monarch or a personal dictator the screen
+  turns gold or red, slogans crowd in, the numbers lie, and at the height of the cult the whole
+  display glitches. It can be switched off in Settings.
 - **Flags** for every state, generated from its name and ideology, that change when the regime does.
 - **A living world**: blocs, coalitions against the leader, foreign-funded movements, general
   strikes called from abroad, revolutionary waves, a Great Slump, four eras.
@@ -112,5 +121,5 @@ describes the systems and the data schema.
 
 ## Credits
 
-Typeface: Barlow and Barlow Condensed by Jeremy Tribby, SIL Open Font License 1.1
+Typefaces: Barlow and Barlow Condensed by Jeremy Tribby, SIL Open Font License 1.1; Special Elite by Astigmatic, Apache License 2.0
 (`fonts/OFL.txt`). All sound is synthesised in the browser.

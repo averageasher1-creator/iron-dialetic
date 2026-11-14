@@ -85,12 +85,18 @@
   };
 
   /* ---------------------------------------------------------------- tiles */
-  ID.setOwner = function (G, i, to) {
+  /* keepPop: the caller moves the people itself (civil wars, secessions). Otherwise the people living
+     on a tile go with it: a share of the old owner's population equal to the tile's share of its land. */
+  ID.setOwner = function (G, i, to, keepPop) {
     const from = G.owner[i]; if (from === to) return;
     const t = G.terrain[i], tr = TERR[t];
     const dead = G.rad[i] > 0;
     const pc = dead ? 0 : tr.pop, fd = dead ? 0 : tr.food * (G.river[i] ? 1.25 : 1);
     const P = G.provinces[G.prov[i]];
+    if (from && !keepPop && pc > 0) {
+      const a = G.nations[from];
+      if (a.popLand > 0) { const mv = a.pop * Math.min(0.5, pc / a.popLand); a.pop -= mv; if (to) G.nations[to].pop += mv * 0.85; }
+    }
     if (from) {
       const a = G.nations[from]; a.tiles--; a.tc[t]--; a.popLand -= pc; a.foodLand -= fd; a.oreLand -= tr.ore; if (G.coast[i]) a.coastTiles--;
       P.cnt[from] = (P.cnt[from] || 1) - 1;

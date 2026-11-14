@@ -327,7 +327,7 @@
     R.civilOf = n.id; n.civil = R.id; R.tree = n.tree || null;
     const before = n.tiles;
     const popBefore = n.pop, landBefore = Math.max(1, n.popLand);
-    for (let i = 0; i < G.N; i++) if (G.owner[i] === n.id && set.has(G.prov[i])) ID.setOwner(G, i, R.id);
+    for (let i = 0; i < G.N; i++) if (G.owner[i] === n.id && set.has(G.prov[i])) ID.setOwner(G, i, R.id, true);
     let big = null;
     for (const p of provs) { const Pr = G.provinces[p]; Pr.core = R.id; Pr.owner = R.id; Pr.integ = 100; Pr.unrest = 10; Pr.oppStr = 0; Pr.opp = null; if (!big || Pr.tiles > big.tiles) big = Pr; }
     R.capital = G.owner[big.center] === R.id ? big.center : -1;
@@ -385,7 +385,7 @@
     }
     const before = n.tiles, landBefore = Math.max(1, n.popLand), popBefore = n.pop;
     let got = 0;
-    for (let i = 0; i < G.N; i++) if (G.owner[i] === n.id && G.prov[i] === Pr.id) { ID.setOwner(G, i, R.id); got++; }
+    for (let i = 0; i < G.N; i++) if (G.owner[i] === n.id && G.prov[i] === Pr.id) { ID.setOwner(G, i, R.id, true); got++; }
     if (!got) return;
     if (G.owner[R.capital] !== R.id) R.capital = G.owner[Pr.center] === R.id ? Pr.center : R.capital;
     const pshare = clamp(1 - n.popLand / landBefore, 0.01, 0.6);
@@ -485,7 +485,7 @@
       }
       n.a.uSum += Pr.unrest * tiles; n.a.uT += tiles; n.a.oSum += Pr.oppStr * tiles;
       // secession of unintegrated land
-      if (!isCore && Pr.unrest > 72 && Pr.integ < 55 && tiles > 20 && G.rng.chance(0.02 * (n.ai ? 1 : diffP.crisis)) && !(n.civil && G.nations[n.civil].alive)) P.secede(G, n, Pr);
+      if (!isCore && Pr.unrest > 72 && Pr.integ < 55 && tiles > 20 && G.rng.chance(0.02 * (n.ai ? 1 : diffP.crisis)) && !(n.civil && G.nations[n.civil].alive) && !(n.civilOf && G.nations[n.civilOf] && G.nations[n.civilOf].alive)) P.secede(G, n, Pr);
     }
     for (const n of G.nations) if (n && n.alive) { n.a.unrest = n.a.uT ? n.a.uSum / n.a.uT : 0; n.a.opp = n.a.uT ? n.a.oSum / n.a.uT : 0; n.a.noncoreShare = n.a.uT ? n.a.noncore / n.a.uT : 0; }
     for (let k = waves.length - 1; k >= 0; k--) if (++waves[k].m > 24) waves.splice(k, 1);
