@@ -18,7 +18,8 @@
     mandate: 'Mandate', particip: 'Participation', discipline: 'Party discipline', charisma: 'Leader’s authority', grievance: 'Hidden grievance', prestige: 'Generals’ prestige', dist: 'Plan distortion',
     conf: 'Business confidence', inflation: 'Inflation', threat: 'Threat', unrest: 'Unrest', opp: 'Opposition strength', equip: 'Equipment' };
   const MODL = { prod: 'industrial output', food: 'food output', atk: 'attack', def: 'defence', sci: 'research', ls: 'living standards', legit: 'legitimacy', stab: 'stability', rev: 'revenue', eff: 'efficiency',
-    unrest: 'unrest', opp: 'opposition growth', trade: 'trade income', conf: 'confidence', growth: 'population growth', regen: 'recruitment', vote: 'vote share', dist: 'distortion growth', bureau: 'bureaucratisation', pow_capital: 'capital’s power' };
+    unrest: 'unrest', opp: 'opposition growth', trade: 'trade income', conf: 'confidence', growth: 'population growth', regen: 'recruitment', vote: 'vote share', dist: 'distortion growth', bureau: 'bureaucratisation', pow_capital: 'capital’s power',
+    coup: 'coup risk', auth: 'authority a month', speed: 'front speed', aloss: 'losses in attack', mob: 'mobilisation ceiling', wePace: 'war-weariness growth', driftK: 'drift speed', cityDef: 'city defence', lure: 'enemy advance' };
   const BAD_UP = { we: 1, corr: 1, bureau: 1, grievance: 1, dist: 1, inflation: 1, threat: 1, unrest: 1, opp: 1, prestige: 1 };
   const sg = (v) => (v > 0 ? '+' : '−') + Math.abs(Math.round(v * 100) / 100);
   const dur = (m) => (m >= 600 ? ' for good' : ' for ' + m + ' months');
@@ -38,7 +39,7 @@
       else if (k === 'pop') out.push({ t: 'Population ' + sg(f[1] * 100) + '%', good: f[1] > 0 });
       else if (k === 'troops') out.push({ t: 'Troops ' + sg(f[1] * 100) + '%', good: f[1] > 0 });
       else if (k === 'legitmod') out.push({ t: 'Legitimacy ' + sg(f[1]) + dur(f[2]), good: f[1] > 0 });
-      else if (k === 'mod') { const pctv = f[1] === 'legit' || f[1] === 'stab' || f[1] === 'ls' || f[1] === 'unrest' || f[1] === 'conf' || f[1] === 'opp' ? sg(f[2]) : sg(f[2] * 100) + '%'; const badUp = f[1] === 'unrest' || f[1] === 'opp' || f[1] === 'dist' || f[1] === 'bureau' || f[1] === 'pow_capital'; out.push({ t: (MODL[f[1]] || f[1]).replace(/^./, (c) => c.toUpperCase()) + ' ' + pctv + dur(f[3]), good: badUp ? f[2] < 0 : f[2] > 0 }); }
+      else if (k === 'mod') { const pctv = f[1] === 'legit' || f[1] === 'stab' || f[1] === 'ls' || f[1] === 'unrest' || f[1] === 'conf' || f[1] === 'opp' || f[1] === 'auth' ? sg(f[2]) : sg(f[2] * 100) + '%'; const badUp = f[1] === 'unrest' || f[1] === 'opp' || f[1] === 'dist' || f[1] === 'bureau' || f[1] === 'pow_capital' || f[1] === 'coup' || f[1] === 'aloss' || f[1] === 'wePace' || f[1] === 'driftK'; out.push({ t: (MODL[f[1]] || f[1]).replace(/^./, (c) => c.toUpperCase()) + ' ' + pctv + dur(f[3]), good: badUp ? f[2] < 0 : f[2] > 0 }); }
       else if (k === 'drift') out.push({ t: 'Drift toward ' + ID.IDEOLOGIES[f[1]].name + ' ' + sg(f[2]), good: f[2] < 0 });
       else if (k === 'driftAll') out.push({ t: 'All drifts ' + sg(f[1]), good: f[1] < 0 });
       else if (k === 'strike') out.push({ t: 'Strike for ' + f[1] + ' months (industry −30%)', good: false });
@@ -47,7 +48,7 @@
       else if (k === 'tech') out.push({ t: 'Research progress ' + sg(f[1]), good: f[1] > 0 });
       else if (k === 'note') out.push({ t: f[1], good: f.length > 2 ? f[2] : true });
       else if (k === 'later') hidden = true;
-      else if (ID.Focus && ID.Focus.DESC[k]) out.push(ID.Focus.DESC[k](f, n));
+      else if (ID.Focus && ID.Focus.DESC[k]) { const d = ID.Focus.DESC[k](f, n); if (d && d.t) out.push(d); }
     }
     if (hidden) out.push({ t: 'This will have consequences later.', good: null });
     return out;

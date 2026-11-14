@@ -31,6 +31,7 @@
     for (const k in ID.FOCUS.ideos || {}) for (const f of ID.FOCUS.ideos[k]) { all[f.id] = f; f.tree = 'ideo:' + k; f.ideoTree = k; }
     for (const b in ID.FOCUS.nations) { nat[b] = {}; for (const f of ID.FOCUS.nations[b]) { all[f.id] = f; nat[b][f.id] = f; f.tree = b; } }
     for (const k in ID.FOCUS.families || {}) for (const f of ID.FOCUS.families[k]) { all[f.id] = f; f.tree = 'fam:' + k; }
+    for (const b in ID.FOCUS.projects || {}) for (const f of ID.FOCUS.projects[b]) { all[f.id] = f; f.tree = b; if (nat[b]) nat[b][f.id] = f; }
   }
   /* Names in family trees carry {A} and {N}: the state's adjective and name. */
   Fo.sub = (t, n) => (t ? String(t).replace(/\{A\}/g, n.adj).replace(/\{N\}/g, n.base) : '');
@@ -38,9 +39,11 @@
   Fo.def = (id) => { if (!all) index(); return all[id]; };
   Fo.ensure = (n) => n.path || (n.path = { cur: null, start: 0, end: 0, done: {} });
   /* The trees a country can draw on: its national programme (if it has one) and the general one. */
+  const fullCache = {};
+  const natFull = (b) => fullCache[b] || (fullCache[b] = ID.FOCUS.nations[b].concat(ID.FOCUS.projects[b] || []));
   Fo.trees = function (n) {
     const out = [];
-    if (n.tree && ID.FOCUS.nations[n.tree]) out.push({ key: 'nat', name: n.adj + ' programme', list: ID.FOCUS.nations[n.tree] });
+    if (n.tree && ID.FOCUS.nations[n.tree]) out.push({ key: 'nat', name: n.adj + ' programme', list: n.nq && ID.FOCUS.projects && ID.FOCUS.projects[n.tree] ? natFull(n.tree) : ID.FOCUS.nations[n.tree] });
     else { const fam = ID.ideo(n).family, L = ID.FOCUS.families && ID.FOCUS.families[fam]; if (L) out.push({ key: 'nat', name: n.adj + ' programme', fam, list: L }); }
     const IT = ID.FOCUS.ideos && ID.FOCUS.ideos[n.ideo];
     if (IT) { if (!all) index(); out.push({ key: 'ideo', name: ID.ideo(n).name, list: IT }); }
@@ -213,7 +216,7 @@
     const wantArmy = n.nwars || n.a.threatened, hungry = n.foodBal < 1.02;
     const f = G.rng.weighted(av, (x) => {
       let w = x.tree === 'general' ? 1 : x.crisis ? 5 : x.ideoTree ? 2.5 : 3;
-      if (x.tree !== 'general' && !x.crisis && !x.ideoTree && hist) w = x.hist ? 40 : G.story && G.story.loose ? 0.25 : 0;
+      if (x.tree !== 'general' && !x.crisis && !x.ideoTree && !x.proj && hist) w = x.hist ? 40 : G.story && G.story.loose ? 0.25 : 0;
       if (x.repeat) w *= 0.45;
       if (x.dest) w *= 3;
       if (typeof x.ai === 'function') w *= x.ai(n, G); else if (x.ai != null) w *= x.ai;

@@ -416,9 +416,64 @@ country; the storyline should branch more and react to choices; more narrative, 
   (updated for the three-way history setting), `flows.js`, `perf.js`; `/tmp/diag/doc.js`,
   `docpush.js` (gauge equilibria), `collapse.js`, `lowstab.js`, `east.js`, `hes.js`, `reform.js`.
 
+## Session 8: the regime, national questions, strategic combat, the banner
+
+Feedback: longer and more impactful programme trees; more strategic combat; more specialisation
+per ideology and more narrative woven into each country's play, with mechanics rather than
+visuals ("like the Pavon personalist dictatorship, for every country, 10x"); the dictator
+visuals should be one big banner of text; national flavour belongs to the main map, less of it
+in free play.
+
+- **The regime** (`data/regime.js`, engine `sim/regime.js`, panel `ui/regime.js`, tab **Regime**,
+  key I): every state has an inner circle of five seats (army, police, economy, ideology, foreign;
+  titles and body names per ideology in `ID.REGIME.body`). Figures `{k, seat, name, lean, comp,
+  loy, amb, age, plot, heir}` give seat effects scaled by competence and loyalty (`Rg.SEATFX`,
+  added to `n.sigm` after the doctrine), disloyal holders work against you, and holders whose
+  `lean` differs pull `n.drift[lean]`. Loyalty settles toward a target (own convictions, the
+  line, stability, fear after purges); disloyal and ambitious figures build `plot`: at 3 a warning
+  (`rg_plot` for the player, `Rg.aiPlot` for AI), at 7 `Rg.strike` (a coup from inside; success
+  makes the plotter leader and may change the ideology to his lean). Actions: win over (gold),
+  name heir (auth; sets `n.flags.heir`), purge/recall/dismiss/disgrace (auth; seat weaker if
+  the purged was capable). Successions (`P.newLeader`, `P.succession`) now go to the heir or the
+  strongest figure (`Rg.successor`); a change of system keeps figures who believed in the new
+  order and promotes one (`Rg.onIdeology`, not after elections or reforms).
+- **Sessions**: each ideology has a session (party congress, imperial council, government
+  programme after every election, party rally...) every 3–5 years (`body.every`) with three
+  **lines** (`ID.REGIME.lines`, 66 in all): modifiers while the line stands, a one-off effect,
+  gauge drift, and loyalty for the figures whose lean it matches. Player: urgent `rg_session`
+  dispatch; AI: weighted pick. "Convene it now" costs 25 authority.
+- **National layer** (`data/national.js`, historical campaigns on The Two Continents only,
+  `Rg.national`): each of the 17 countries has a fixed cast (leader with title and traits, five
+  named figures with leans; e.g. Karsova's Bronov/Dzhavakh/Burov, Pavon's Marshal Rrapaj and
+  Shqiri, Antara's General Ugarte) and a **national question**: a two-pole gauge `n.nq.v` with
+  monthly drift, effects, optional side effects (`tick`), three national actions and turning-point
+  events at each end (34 events, `nq_*`). Pavon's bunkers are counted in `n.nq.bunkers`.
+- **National projects** (`data/projects.js`): seven programmes per country appended to the
+  national tree in historical campaigns (`ID.FOCUS.projects`, `f.proj`), two exclusive roads
+  pulling the national question toward its poles. New fx keys: `nq`, `figLoy`, `figPurge`,
+  `figHeir`, `figLeader`, `circleLoy`, `line`. Lasting modifiers of the older national
+  programmes are now 1.5 times as strong. Ten national chapters (dated beats) for the countries
+  that had few: Pavon (the Marshal's suspicion), Irkal (the general's ambition), Norvik, Tessaly,
+  Drava, Lys (the Doge's election), Ruthe, Meridia, Kelda, Vess. 680 programmes in all.
+- **Strategic combat** (`sim/combat.js`): objectives (`n.objs[enemyId] = tile`; the attack heap
+  gets an A*-style distance bias `C.OBJK`, so the front becomes a spearhead; 10% faster, 6%
+  costlier; taking it routs 2–6% of the defender, costs it stability, adds war weariness and
+  gives a three-week surge `a.surge`). Army posture `n.posture` (Offensive, Balanced, Dig in,
+  Elastic defence; 20 days of reorganisation after a change). Land doctrines in the general tree
+  (staff college, then one of manoeuvre / firepower / defence in depth / the nation in arms,
+  flags `ld_*`; new mod channel `mob` for the mobilisation ceiling). AI picks objectives (50%)
+  and postures; the map draws the player's objectives.
+- **The banner** (`ui/madness.js`): the tint, pop-ups, lying numbers, glitches and flashes are
+  gone; under an absolute monarch or a personal dictator a large skewed banner of slogans scrolls
+  across the map now and then (every 75 s at the first stage, every 20 s at the fourth; 7–14 s on
+  screen). Settings: "Propaganda banners".
+- Balance checks: historical civil wars ~4 per run, AI-played soak 5 wins / 3 survive / 9 fall,
+  random-world largest state 22% on average. Tests: `/home/claude/scripts/regime.js` (WHO=...),
+  `warobj.js`, `treeproj.js`, `banner.js`; `/tmp/diag/regime.js`, `objtest.js`.
+
 ## Published (end of session 2)
 
-- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `1794628930-9b67` after session 7,
+- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `LIVEVER` after session 8,
   published from files (index.html, css, js, fonts). To update after edits, republish with
   `publish_files` using the slug and the live version from `get_artifact`.
 - GitHub Pages zip: `/home/claude/iron-dialectic.zip` (rebuild with the zip command in the session log:

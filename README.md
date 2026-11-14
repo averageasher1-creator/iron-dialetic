@@ -32,7 +32,7 @@ Everything works with a trackpad. Nothing needs a right-click.
 | Attack the selected enemy, or expand into selected hinterland | `Enter`, the Attack/Expand button, or double-click |
 | Artillery barrage / air raid | click the order on the war bar, then click enemy land (`Esc` cancels) |
 | Pause / speed | `Space` / `1`–`5` |
-| Panels | `R` ministers' report · `G` state · `E` economy · `L` laws · `P` programme · `M` war · `F` foreign · `O` world · `H` handbook |
+| Panels | `R` ministers' report · `G` state · `I` regime · `E` economy · `L` laws · `P` programme · `M` war · `F` foreign · `O` world · `H` handbook |
 | Map modes | `Z` political · `X` ideology · `C` opposition · `V` unrest · `B` supply · `N` terrain |
 | Close / menu | `Esc` |
 | Answer a dispatch | click an option (crises stop the clock; ordinary dispatches wait at the left of the map), or press its number |
@@ -51,6 +51,18 @@ machine, change it in **Settings**.
   so on), actions only it can take, a way of fighting (commissars, people's war, lightning war,
   martyrs, material superiority, network logistics...) and a war order of its own (deep operation,
   a general strike across the border, lure them in deep, letters of marque...).
+- **The regime**: five named people hold the seats that matter (army, police, economy, ideology,
+  foreign affairs). Their competence and loyalty decide what each seat does for you; their
+  convictions pull the regime toward other systems; the disloyal and ambitious plot. Win them
+  over, name an heir, or purge them. Every system holds its own session (a party congress, an
+  imperial council, a party rally, a new government's programme) that sets the line for years.
+- **Every country has its own story** on *The Two Continents*: a real cast around the ruler and a
+  national question (Aurelia's land, Pavon's fortress of bunkers, Karsova's villages, Suyan's
+  river, Lys's toll on the straits...) with national actions, turning points at each end and a
+  national project in the programme tree that pulls it one way or the other.
+- **Strategic war**: pick an objective and the front becomes a spearhead toward it; take it and
+  the enemy reels. Choose a posture (offensive, dig in, elastic defence) and a land doctrine
+  (manoeuvre, firepower, defence in depth, the nation in arms).
 - **Leaders with traits**: warlords, reformers, paranoiacs, orators, grey administrators. Every new
   leader rolls new ones, and they change how the country behaves, so no two campaigns run the same.
 - **Seven factions** with power drawn from the country's structure and support driven by
@@ -92,13 +104,12 @@ machine, change it in **Settings**.
 - **War you can see and hear**: shell bursts and smoke along every front, attack arrows with
   troop counts, captured-tile counters, screen shake, a generative score that turns martial in
   wartime, and newspaper front pages for wars, revolutions, fallen capitals and new eras.
-- **Absolute rule looks the part**: under an absolute monarch or a personal dictator the screen
-  turns gold or red, slogans crowd in, the numbers lie, and at the height of the cult the whole
-  display glitches. It can be switched off in Settings.
+- **Absolute rule looks the part**: under an absolute monarch or a personal dictator a great banner
+  of slogans sweeps across the map, more often as the cult grows. It can be switched off in Settings.
 - **Flags** for every state, generated from its name and ideology, that change when the regime does.
 - **A living world**: blocs, coalitions against the leader, foreign-funded movements, general
   strikes called from abroad, revolutionary waves, a Great Slump, four eras.
-- **139 events, 47 decisions, 68 doctrine actions and 552 programmes**, many with delayed consequences. Bad news and good news are
+- **185 events, 47 decisions, 68 doctrine actions, 66 session lines, 51 national actions and 680 programmes**, many with delayed consequences. Bad news and good news are
   balanced: after a run of trouble the dice lean toward a windfall, and problems arrive spaced out.
 - **A post-mortem when you fall** naming the faction that turned, what turned it, the last
   years of warnings and what to try next. A chronicle when the campaign ends.

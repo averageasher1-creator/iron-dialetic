@@ -5,7 +5,7 @@
 const path = require('path');
 const root = path.join(__dirname, '..', 'js');
 globalThis.ID = {};
-for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/fortune', 'data/arcs', 'data/focus', 'data/destiny', 'data/story2', 'data/expand', 'data/doctrine', 'data/ideotrees', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/doctrine', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
+for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/fortune', 'data/arcs', 'data/focus', 'data/destiny', 'data/story2', 'data/expand', 'data/doctrine', 'data/ideotrees', 'data/regime', 'data/national', 'data/projects', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/doctrine', 'sim/regime', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
 const ID = globalThis.ID;
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i >= 0 ? process.argv[i + 1] : d; };
 const runs = +arg('runs', 3), years = +arg('years', 66), start = +arg('start', 1910);

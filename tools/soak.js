@@ -2,7 +2,7 @@
    node tools/soak.js [meridia|random] [difficulty] [auto] [hist]   ('auto' lets the AI play the player's nation instead; 'hist' turns on historical mode) */
 'use strict';
 const path = require('path'); const root = path.join(__dirname, '..', 'js'); globalThis.ID = {};
-for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/fortune', 'data/arcs', 'data/focus', 'data/destiny', 'data/story2', 'data/expand', 'data/doctrine', 'data/ideotrees', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/doctrine', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
+for (const f of ['core/util', 'data/base', 'data/ideologies', 'data/names', 'data/events', 'data/fortune', 'data/arcs', 'data/focus', 'data/destiny', 'data/story2', 'data/expand', 'data/doctrine', 'data/ideotrees', 'data/regime', 'data/national', 'data/projects', 'sim/mapgen', 'sim/world', 'sim/combat', 'sim/economy', 'sim/politics', 'sim/diplomacy', 'sim/events', 'sim/focus', 'sim/doctrine', 'sim/regime', 'sim/ai', 'sim/game']) require(path.join(root, f + '.js'));
 const ID = globalThis.ID;
 const scen = process.argv[2] || 'meridia', diff = process.argv[3] || 'iron', auto = process.argv.includes('auto'), hist = process.argv.includes('hist');
 const base = ID.newGame({ seed: 5, scenario: scen, headless: true });

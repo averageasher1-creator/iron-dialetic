@@ -230,6 +230,8 @@
     const oldName = n.name, why0 = mode === 'revolution' || mode === 'coup' ? P.troubleOf(G, n) : '';
     ID.applyIdeology(G, n, to, false);
     if (keepLeader) { n.leader = leader; n.leader.title = ID.leaderTitle(to); }
+    n.a.ideoMode = keepLeader || mode === 'election' ? 'election' : mode;
+    if (ID.Regime) ID.Regime.onIdeology(G, n, old);
     for (const f of F) {
       n.fs[f] = 0.5 * n.fs[f] + 0.5 * clamp(52 + (I.fbase[f] || 0) * 0.8, 5, 95);
       if (Iold.ruling.indexOf(f) >= 0 && I.ruling.indexOf(f) < 0 && mode !== 'election') n.sm[f] -= 14;
@@ -686,6 +688,7 @@
     return map[n.ideo] || 'liberal';
   };
   P.election = function (G, n) {
+    if (n.sess) n.sess.next = Math.min(n.sess.next, G.tick + 30); // the new government sets out its programme
     const g = P.electionForecast(G, n) + G.rng.range(-0.03, 0.03);
     if (g >= 0.5) {
       n.mandate = c100(52 + (g - 0.5) * 160); n.cnt.elections = (n.cnt.elections || 0) + 1;
@@ -705,6 +708,7 @@
   P.newLeader = function (G, n, how) {
     const I = ID.ideo(n), old = n.leader;
     n.leader = ID.genLeader(G.rng, n.ideo); n.leader.age = G.rng.int(44, 60);
+    if (ID.Regime && n.circle) ID.Regime.successor(G, n, how);
     const traits = (n.leader.traits || []).map((t) => ID.TRAITS[t].name.toLowerCase()).join(', ');
     const verb = how === 'dies' ? 'is dead' : how === 'ousted' ? 'is ousted' : 'retires';
     if (I.control.type === 'party' || I.control.type === 'decree') { n.stab -= 4; n.sm.bureaucracy -= 3; }
@@ -716,6 +720,7 @@
   P.succession = function (G, n) {
     const I = ID.ideo(n); const old = n.leader;
     n.leader = ID.genLeader(G.rng, n.ideo); n.leader.age = G.rng.int(28, 55);
+    if (ID.Regime && n.circle && !I.flags.softSuccession) ID.Regime.successor(G, n, 'dies');
     n.cnt.successions = (n.cnt.successions || 0) + 1;
     if (I.flags.softSuccession) { n.tradition = c100(n.tradition + 3); ID.news(G, 'The monarch of ' + n.name + ' dies; ' + n.leader.name + ' is crowned.', 'pol', n.id); return; }
     const prepared = n.flags.heir ? 1 : 0;

@@ -175,6 +175,8 @@
       add(n.sig < 18 ? 68 : 52, esc(DD.gauge) + ' ' + Math.round(n.sig), esc(DD.name) + ' is failing. ' + esc(DD.low), ups.map((a) => ({ label: a.name, act: 'doctrine', arg: a.id, off: ID.Doctrine.actBlock(G, n, a), tip: '<h5>' + esc(a.name) + '</h5>' + esc(a.desc) + '<hr>' + esc(DD.gauge) + ' +' + a.sig })));
     }
 
+    if (ID.Regime && ID.Regime.advice) ID.Regime.advice(G, n, add);
+
     /* the quieter matters */
     if (!(n.path && n.path.cur) && ID.Focus.available(G, n).length) add(40, 'No programme under way', 'Every month without one is wasted.', [{ label: 'Open the tree', act: 'tree', arg: 'nat' }, go('Programme', 'prog')]);
     if (n.auth >= 96) add(28, 'Authority is at its ceiling', 'Anything more is lost. Spend it on a law or a decision.', [go('Laws', 'law'), go('State', 'gov')]);

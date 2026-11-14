@@ -329,6 +329,16 @@
         ctx.fillStyle = css(INK, 0.8); ctx.fillRect(X - bs * 0.55, Y + bs * 0.7, bs * 1.1 * p, 3);
       }
     }
+    // the player's objectives: a target ring with a pennant
+    const me = G.nations[G.player];
+    if (me && me.objs) for (const k in me.objs) {
+      const t = me.objs[k]; if (G.owner[t] !== +k) continue;
+      const X = sx((t % W) + 0.5), Y = sy(((t / W) | 0) + 0.5), r = Math.max(9, z * 2.2), pulse = 0.5 + 0.5 * Math.sin(R.t * 4);
+      ctx.strokeStyle = css(RED, 0.95); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(X, Y, r, 0, 6.3); ctx.stroke();
+      ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(X, Y, r * (1.35 + 0.25 * pulse), 0, 6.3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X - r * 1.7, Y); ctx.lineTo(X - r * 0.5, Y); ctx.moveTo(X + r * 0.5, Y); ctx.lineTo(X + r * 1.7, Y); ctx.moveTo(X, Y - r * 1.7); ctx.lineTo(X, Y - r * 0.5); ctx.moveTo(X, Y + r * 0.5); ctx.lineTo(X, Y + r * 1.7); ctx.stroke();
+      ctx.fillStyle = css(RED); ctx.font = '700 11px "Barlow Condensed", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('OBJECTIVE', X, Y - r * 1.9);
+    }
     // capitals
     for (let k = 1; k < G.nations.length; k++) {
       const n = G.nations[k]; if (!n.alive || n.capital < 0) continue;

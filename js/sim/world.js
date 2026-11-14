@@ -66,7 +66,7 @@
 
   ID.maxMob = (n) => {
     const r = ID.RECRUIT[n.laws.recruit] || ID.RECRUIT.conscription;
-    return r.maxMob + (ID.LAWS.mobil.opts[n.laws.mobil || 'peace'].mob || 0);
+    return r.maxMob + (ID.LAWS.mobil.opts[n.laws.mobil || 'peace'].mob || 0) + (n.mods ? ID.mod(n, 'mob') : 0);
   };
   ID.ideo = (n) => ID.IDEOLOGIES[n.ideo];
   ID.popCap = (n) => Math.max(20, n.popLand * (1 + 0.07 * n.tech.agr) + n.nb[B.CITY] * 400);
@@ -462,6 +462,7 @@
     G.world.depressionAt = (rng.int(1927, 1933) - ID.START_YEAR) * 360 + rng.int(0, 359);
     G.historical = !!(opts.historical && sc && sc.id === 'meridia');
     if (G.historical) { G.world.depressionAt = (1929 - ID.START_YEAR) * 360 + 9 * 30; ID.Story.init(G); G.story.loose = opts.loose !== false; }
+    if (ID.Regime) for (const n of nats) ID.Regime.ensure(G, n);
     ID.chron(G, 'world', 'The year ' + startYear + '. ' + nats.length + ' states divide the world between them.');
     return G;
   };

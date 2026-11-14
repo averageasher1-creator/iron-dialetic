@@ -92,6 +92,8 @@
     const G = UI.G, n = P(); const r = ID.Combat.launch(G, n.id, 0, n.troops * UI.commit, 'advance');
     if (typeof r === 'string') { UI.toast(r); ID.Audio.play('bad'); } else { ID.Audio.play('drums'); UI.toast('Columns march into the hinterland with ' + ID.fmtPop(r.troops) + ' troops.', true); }
   };
+  acts.setObj = (i) => { if (UI.tryDo(ID.Combat.setObjective(UI.G, P(), i))) { UI.toast('Objective set. The offensive will drive toward it.', true); UI.after(); } };
+  acts.posture = (k) => { if (UI.tryDo(ID.Combat.setPosture(UI.G, P(), k))) { UI.toast(ID.Combat.POSTURE[k].name + ': the army reorganises.', true); UI.after(); } };
   acts.abil = (k) => {
     const G = UI.G, n = P(), ab = ID.Combat.ABIL[k];
     if (ab.self) { if (UI.tryDo(ID.Combat.useAbil(G, n, k)) && n.a.lastAbil && n.a.lastAbil.msg) UI.toast(ab.name + ': ' + n.a.lastAbil.msg, true); return; }
@@ -168,6 +170,7 @@
   const ICON = {
     brief: '<svg viewBox="0 0 24 24"><path d="M5 2h11l4 4v16H5zM15 2v5h5M8.5 11h8M8.5 15h8M8.5 19h5"/></svg>',
     gov: '<svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M2 10h20L12 3z"/></svg>',
+    reg: '<svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><circle cx="5" cy="14" r="2.4"/><circle cx="19" cy="14" r="2.4"/><path d="M7 21c0-3 2.2-5.5 5-5.5s5 2.5 5 5.5M1.5 21c0-2 1.5-3.6 3.5-3.6M22.5 21c0-2-1.5-3.6-3.5-3.6"/></svg>',
     eco: '<svg viewBox="0 0 24 24"><path d="M3 21V11l5 3V11l5 3V4h4v17zM3 21h18"/></svg>',
     law: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg>',
     mil: '<svg viewBox="0 0 24 24"><path d="M4 20L20 4M14 4h6v6M4 4l16 16M4 10V4h6"/></svg>',
@@ -177,7 +180,7 @@
     menu: '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
     prog: '<svg viewBox="0 0 24 24"><path d="M5 22V3M5 4h13l-3 4.5 3 4.5H5"/></svg>',
   };
-  const TABS = [['brief', 'Report', 'R'], ['gov', 'State', 'G'], ['eco', 'Economy', 'E'], ['law', 'Laws', 'L'], ['prog', 'Programme', 'P'], ['mil', 'War', 'M'], ['for', 'Foreign', 'F'], ['world', 'World', 'O'], ['help', 'Handbook', 'H']];
+  const TABS = [['brief', 'Report', 'R'], ['gov', 'State', 'G'], ['reg', 'Regime', 'I'], ['eco', 'Economy', 'E'], ['law', 'Laws', 'L'], ['prog', 'Programme', 'P'], ['mil', 'War', 'M'], ['for', 'Foreign', 'F'], ['world', 'World', 'O'], ['help', 'Handbook', 'H']];
   UI.TABS = TABS;
   UI.renderRail = function () {
     $('#rail').innerHTML = TABS.map((t) => '<button class="tab' + (UI.tab === t[0] ? ' on' : '') + '" data-act="tab" data-a=\'"' + t[0] + '"\' id="tab-' + t[0] + '"' + tip('<b>' + t[1] + '</b> <span class="dim">(' + t[2] + ')</span>') + '>' + ICON[t[0]] + '<span>' + t[1] + '</span><i class="pip" hidden></i>' + (t[0] === 'prog' ? '<i class="tprog"><u id="tprog"></u></i>' : '') + '</button>').join('') +
@@ -244,7 +247,7 @@
   UI.renderPanel = function (resetScroll) {
     if (!UI.tab || !UI.G) return;
     const d = $('#drawer'); const body = d.querySelector('.db'); const sc = body && !resetScroll ? body.scrollTop : 0;
-    const title = TABS.find((x) => x[0] === UI.tab)[1];
+    const title = UI.tab === 'reg' && ID.Regime ? ID.Regime.body(P()).circle : TABS.find((x) => x[0] === UI.tab)[1];
     d.innerHTML = '<div class="dh"><h2>' + title + '</h2><button class="x" data-act="closeTab"' + tip('Close (Esc)') + '>✕</button></div><div class="db">' + ID.Panels[UI.tab](UI.G, P()) + '</div>';
     d.querySelector('.db').scrollTop = sc;
     UI.retip();
@@ -323,6 +326,8 @@
           h += UI.btn('Missile strike here', 'missile', 0, { off: typeof cm === 'string' ? cm : '', tip: 'Destroys about half the buildings within 3 tiles.' });
           if (me.tech.mil >= 6) h += UI.btn('Atomic strike here', 'missile', 1, { cls: 'red', off: typeof cn === 'string' ? cn : '', tip: '<h5>Atomic strike</h5>Destroys everything within 8 tiles and poisons the land for ten years.<hr><span class="bad">Every state’s opinion of you collapses, threat +50, your own clergy and intelligentsia recoil, and anyone who has the bomb may answer in kind.</span>' });
         }
+        const isObj = me.objs && me.objs[n.id] === i;
+        h += UI.btn(isObj ? 'Objective set' : 'Make this the objective', 'setObj', i, { cls: isObj ? 'ghost' : 'red', off: isObj ? 'Already the objective against ' + esc(n.name) + '.' : '', tip: '<h5>Objective</h5>Your offensive against ' + esc(n.name) + ' bends toward this point: a spearhead instead of a broad front, 10% faster, with 6% heavier losses on its exposed flanks. When it falls the enemy reels, loses troops and stability, and your attack surges forward for three weeks.' });
         const dord = ID.Doctrine.orderOf(me);
         const tk = ['barrage', 'airraid']; if (dord && !dord.self) tk.unshift(dord.key);
         for (const k of tk) { const ab = ID.Combat.ABIL[k]; h += UI.btn(ab.name + ' here <span>' + ID.Combat.abilGold(me, ab) + ' gold</span>', 'abil', k, { off: ID.Combat.abilBlock(G, me, k, i), tip: '<h5>' + ab.name + '</h5>' + esc(ab.desc) + '<hr>Range ' + ab.range + ' tiles from your land · radius ' + ab.r + ' · every ' + ab.cd + ' days' }); }
@@ -358,6 +363,7 @@
     let h = '<div class="l1"><label' + tip('<h5>Commit</h5>The share of your uncommitted pool sent into the next attack or landing. What you send leaves the pool; what you keep defends everywhere at once.' + (cap < 1 ? '<hr><span class="warn">' + esc(I.name) + ': no single offensive may use more than ' + Math.round(cap * 100) + '%.</span>' : '')) + '>Commit</label><input type="range" min="5" max="' + Math.round(cap * 100) + '" step="5" value="' + Math.round(UI.commit * 100) + '" data-in="commit" id="in-commit"><b id="commit-v">' + Math.round(UI.commit * 100) + '% · ' + ID.fmtPop(tr) + '</b>' +
       (t ? UI.btn('Attack ' + esc(t.base), 'attack', null, { cls: 'red', id: 'b-attack', tip: 'Launch or reinforce the attack on ' + esc(t.name) + ' <span class="dim">(Enter)</span>' }) : n.nwars ? '<span class="dim" style="font-size:14px">Select an enemy on the map</span>' : '') +
       (wildOK ? UI.btn('Expand', 'expand', null, { cls: t ? 'ghost' : 'red', id: 'b-expand', tip: '<h5>Expand into the hinterland</h5>Claim unclaimed land along your frontier with ' + ID.fmtPop(tr) + ' troops. No war, no vote: the land is free for whoever takes it first. Your neighbours are racing for it too.' }) : '') + '</div>';
+    if (n.nwars) { const PO = ID.Combat.POSTURE, cur = n.posture || 'balanced'; h += '<div class="styles posture"><span class="plab">Posture</span>' + Object.keys(PO).map((k) => UI.btn(PO[k].name, 'posture', k, { cls: 'sm ' + (cur === k ? 'on' : 'ghost'), tip: '<h5>' + PO[k].name + '</h5>' + esc(PO[k].desc) + (n.flags.ld_depth && k === 'depth' ? '<hr>Defence in depth doctrine: twice as effective.' : '') + '<hr>Changing posture costs twenty days of reorganisation.' })).join('') + '</div>'; }
     const dord = ID.Doctrine.orderOf(n), okeys = ['barrage', 'airraid', 'reserves']; if (dord) okeys.unshift(dord.key);
     if (n.nwars) h += '<div class="styles orders">' + okeys.map((k) => { const ab = ID.Combat.ABIL[k], why = ID.Combat.abilBlock(G, n, k, ab.self ? null : -1), soft = why && (why.indexOf('Select') === 0); const cd = (n.cd['ab_' + k] || 0) - G.tick; const g = ID.Combat.abilGold(n, ab), ac = ID.Combat.abilCd(n, ab); return UI.btn(ab.name + (cd > 0 ? ' <span class="num">' + cd + 'd</span>' : ' <span class="num">' + (g ? g + 'g' : 'free') + '</span>'), 'abil', k, { cls: 'sm ' + (UI.aim === k ? 'on' : ab.doctrine ? 'dord' : 'ghost'), off: soft ? '' : why, tip: '<h5>' + ab.name + (ab.doctrine ? ' <span class="dim">· ' + esc(ID.ideo(n).name) + ' order</span>' : '') + '</h5>' + esc(ab.desc) + (ab.self ? '' : ab.range >= 999 ? '<hr>Click, then click the land of an enemy at war with you.' : '<hr>Click, then click enemy land within ' + ab.range + ' tiles of yours.') + '<br>Cost ' + (g ? g + ' gold' : 'nothing') + ' · every ' + ac + ' days' }); }).join('') + '</div>';
     if (n.nwars) h += '<div class="styles">' + Object.keys(ID.STYLES).map((k) => { const S = ID.STYLES[k], e = I.doctrine.styles[k] || 0, ok = ID.Combat.styleOk(n, k); return UI.btn(S.name + ' <span class="num">×' + e.toFixed(2) + '</span>', 'style', k, { cls: 'sm ' + (UI.style === k ? 'on' : 'ghost'), off: ok ? '' : S.needs === 'mil2' && n.tech.mil < 2 ? 'Needs military technology 2.' : 'Your doctrine cannot fight this way.', tip: '<h5>' + S.name + '</h5>' + esc(S.desc) + '<hr>Your doctrine: <b>×' + e.toFixed(2) + '</b> effectiveness' }); }).join('') + '</div>';
@@ -373,6 +379,7 @@
     const G = UI.G, n = P(), I = ID.ideo(n), out = []; const add = (text, tab, red, act, arg) => out.push({ text, tab, red, act, arg });
     const urg = ID.Advice ? ID.Advice.urgent(G, n) : 0;
     if (urg) add('<b>Ministers’ report</b>: ' + urg + ' urgent matter' + (urg > 1 ? 's' : '') + ', with remedies', 'brief', true);
+    if (ID.Regime && ID.Regime.alerts) ID.Regime.alerts(G, n, add);
     if (n.nwars) {
       let inc = 0; for (const a of G.attacks) if (a.to === n.id) inc += a.troops;
       if (inc > 1) add('<b>Under attack</b> by ' + ID.fmtPop(inc) + ' troops', 'mil', true);

@@ -77,6 +77,20 @@
       [['troops', 0.1], ['sup', 'peasants', 8], ['sup', 'capital', -5], ['sup', 'clergy', -3]]),
   ];
 
+  /* ---------------------------------------------------------------- land doctrine (general tree) */
+  const LD = ['g_ld_man', 'g_ld_fire', 'g_ld_depth', 'g_ld_mass'];
+  const ld = (id, name, x, desc, fx, o) => ID.FOCUS.general.push(Object.assign({ id, name, x, y: 1, days: 150, req: ['g_ld_college'], excl: LD.filter((k) => k !== id), desc, fx }, o || {}));
+  ID.FOCUS.general.push({ id: 'g_ld_college', name: 'The staff college', x: 8.5, y: 0, days: 120, desc: 'A school for the officers who will fight the next war, and an argument about what kind of war it will be.', fx: [['mod', 'atk', 0.03, PERM, 'Staff college'], ['mod', 'def', 0.03, PERM, 'Staff college']] });
+  ld('g_ld_man', 'Manoeuvre warfare', 7, 'Speed is armour. Strike at a point, break through, and keep going.', [['flag', 'ld_man'], ['mod', 'speed', 0.10, PERM, 'Manoeuvre warfare'], ['note', 'Taking an objective counts twice: a longer surge, a bigger rout']]);
+  ld('g_ld_fire', 'Superior firepower', 8, 'Let the guns do the work, and the infantry walk in afterwards.', [['flag', 'ld_fire'], ['mod', 'aloss', -0.10, PERM, 'Superior firepower'], ['note', 'Barrages and air raids cost 30% less and hit 25% harder']]);
+  ld('g_ld_depth', 'Defence in depth', 9, 'Every line is a trap. Let them come, and let them bleed.', [['flag', 'ld_depth'], ['mod', 'def', 0.06, PERM, 'Defence in depth'], ['note', 'The elastic defence posture is twice as effective']]);
+  ld('g_ld_mass', 'The nation in arms', 10, 'Every citizen a soldier, every factory a depot.', [['flag', 'ld_mass'], ['mod', 'mob', 0.03, PERM, 'Nation in arms'], ['mod', 'regen', 0.2, PERM, 'Nation in arms']]);
+  const ld2 = (id, req, name, x, desc, fx) => ID.FOCUS.general.push({ id, name, x, y: 2, days: 180, req: [req], desc, fx });
+  ld2('g_ld_man2', 'g_ld_man', 'Deep exploitation', 7, 'Motorised columns that do not stop at the breach.', [['mod', 'speed', 0.08, PERM, 'Deep exploitation'], ['mod', 'atk', 0.04, PERM, 'Deep exploitation']]);
+  ld2('g_ld_fire2', 'g_ld_fire', 'Combined arms', 8, 'Guns, tanks, aircraft and infantry on one radio net.', [['mod', 'atk', 0.06, PERM, 'Combined arms'], ['mod', 'aloss', -0.05, PERM, 'Combined arms']]);
+  ld2('g_ld_depth2', 'g_ld_depth', 'The fortified line', 9, 'Concrete, wire and interlocking fields of fire from one border to the other.', [['mod', 'def', 0.08, PERM, 'Fortified line'], ['build', 2, 2]]);
+  ld2('g_ld_mass2', 'g_ld_mass', 'The human wave', 10, 'There are more of us than there are of their bullets.', [['mod', 'atk', 0.04, PERM, 'Human wave'], ['troops', 0.06]]);
+
   /* ---------------------------------------------------------------- home-front branches */
   /* [root, choiceA, choiceB, capstone], each [suffix, name, desc, fx]. */
   const home = (base, pre, b) => {

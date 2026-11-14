@@ -179,7 +179,7 @@
     // dispatches left in the tray are settled by the ministers after three months
     if (G.tray && G.tray.length) for (let k = G.tray.length - 1; k >= 0; k--) if (G.tick - G.tray[k].t > 90 || k < G.tray.length - 6) ID.Events.choose(G, -1, k, true);
     const ns = ID.alive(G);
-    for (const n of ns) if (n.alive) { ID.Doctrine.month(G, n); ID.Economy.month(G, n); }
+    for (const n of ns) if (n.alive) { ID.Doctrine.month(G, n); if (n.alive) ID.Regime.month(G, n); if (n.alive) ID.Economy.month(G, n); }
     ID.Politics.provinces(G);
     for (const n of ns) { if (n.alive) ID.Politics.month(G, n); if (G.over) return; }
     for (const n of ns) if (n.alive) { ID.Diplomacy.opsMonth(G, n); ID.Events.month(G, n); }

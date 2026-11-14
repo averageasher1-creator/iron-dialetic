@@ -119,6 +119,16 @@ then, and only takes a regime-changing branch when its politics already lean tha
 are preceded by arcs: the committees form, the general strike is called, the officers talk, the
 letters from the front turn bitter. Each stage offers a way to change the outcome.
 
+### People, sessions and national questions (added in session 8)
+Ideology lives in people. Every regime has an inner circle whose members have competence,
+loyalty, ambition and convictions of their own; the player governs through them and against
+them. Regular sessions turn the abstract system into a series of concrete choices about the line.
+On the main map each country also carries a national question drawn from its history, so playing
+Pavon is about concrete, isolation and the succession, and playing Suyan is about the river,
+before it is about any ideology. Free campaigns and random worlds keep the circles and sessions
+but drop the national casts, questions, projects and chapters, which only make sense in the
+story they were written for.
+
 ### Combat in five sentences
 Troops are a share of your population set by the mobilisation slider; soldiers are not
 workers. To attack, pick a neighbour you are at war with, set the commit slider, choose a
@@ -240,9 +250,12 @@ js/data/*.js          base (terrain, laws, buildings...), ideologies, names + sc
                       (tone of each dispatch, good-news dispatches),
                       focus (programme trees and the historical storyline), destiny (identity, destinies,
                       family trees), story2 (branching beats), arcs (warning chains), expand (emergency
-                      measures, home-front branches), doctrine (doctrines, leader traits), ideotrees
+                      measures, home-front branches), doctrine (doctrines, leader traits), ideotrees,
+                      regime (seats, bodies, session lines), national (casts and national questions),
+                      projects (national projects and chapters)
 js/sim/*.js           mapgen, world, combat, economy, politics, diplomacy, events, focus (programmes and
-                      storyline engine), doctrine (gauges, actions, war traits and orders), ai, game
+                      storyline engine), doctrine (gauges, actions, war traits and orders), regime
+                      (circles, sessions, national questions), ai, game
 js/ui/render.js       canvas map: 1px-per-tile offscreen image, dirty-tile repaint, vector overlays
 js/ui/audio.js        synthesised sound cues and the generative score (ID.Music)
 js/ui/flags.js        procedural flags, ideology emblems, dispatch poster banners
@@ -251,6 +264,7 @@ js/ui/panels.js       State, Economy, Laws, War, Foreign, World, Handbook
 js/ui/programme.js    Programme panel, the programme tree, history timeline, handbook page
 js/ui/advice.js       the ministers' Report: ranked problems, causes and one-click levers
 js/ui/doctrine.js     doctrine card, leader traits, the doctrine at war, Doctrines handbook page
+js/ui/regime.js       the Regime panel: inner circle, session line, national question; alerts and Report items
 js/ui/nation.js       Nation screen and superevents; scenes.js paints their scenes
 js/ui/tray.js         dispatch tray (ordinary dispatches wait while the clock runs)
 js/ui/madness.js      screen effects for absolute monarchs and personal dictators

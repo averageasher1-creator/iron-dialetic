@@ -34,6 +34,33 @@
     n.a.atk = r.atk * d.atk * morale * n.equip * tech * (1 + mob + sec + ID.mod(n, 'atk')) * bonus * mat * lead * (dp ? dp.atkMul : 1);
     n.a.def = r.def * d.def * morale * Math.pow(n.equip, 0.7) * tech * (1 + sec * 0.5 + ID.mod(n, 'def')) * bonus * mat * mart;
     n.a.home = d.home; n.a.abroad = r.abroad || 1; n.a.rough = r.roughBonus || 1;
+    const po = C.POSTURE[n.posture] || C.POSTURE.balanced, reorg = n.postureAt && G && G.tick - n.postureAt < 20 ? 0.92 : 1;
+    n.a.atk *= po.atk * reorg; n.a.def *= po.def * reorg;
+  };
+
+  /* Army posture: how the whole army stands. Changing it costs twenty days of reorganisation. */
+  C.POSTURE = {
+    attack: { name: 'Offensive', atk: 1.12, def: 0.9, desc: 'Everything forward. Attack +12%, defence −10%.' },
+    balanced: { name: 'Balanced', atk: 1, def: 1, desc: 'Ready for anything, best at nothing.' },
+    defend: { name: 'Dig in', atk: 0.85, def: 1.15, desc: 'Trenches, wire and fixed lines. Defence +15%, attack −15%.' },
+    depth: { name: 'Elastic defence', atk: 0.95, def: 0.95, depth: 1, desc: 'Give ground slowly and make them pay: enemy offensives against you move 6% faster but lose 30% more men, and your own losses there fall by a quarter.' },
+  };
+  C.setPosture = function (G, n, k) {
+    if (!C.POSTURE[k]) return 'Unknown posture.';
+    if ((n.posture || 'balanced') === k) return 'Already in that posture.';
+    if (n.postureAt && G.tick - n.postureAt < 30) return 'The army is still reorganising.';
+    n.posture = k; n.postureAt = G.tick; C.refresh(G, n);
+    return '';
+  };
+  /* Objectives: the tile an offensive drives toward. */
+  C.OBJK = 0.5;
+  C.objOf = (G, A, to) => { const t = A.objs && A.objs[to]; return t != null && G.owner[t] === to ? t : -1; };
+  C.setObjective = function (G, n, tile) {
+    const o = G.owner[tile]; if (!o || o === n.id) return 'Pick enemy land.';
+    if (!ID.atWar(G, n.id, o)) return 'You are not at war with ' + G.nations[o].name + '.';
+    (n.objs = n.objs || {})[o] = tile;
+    for (const a of G.attacks) if (a.from === n.id && a.to === o) a.scan = -999; // re-plan the front
+    return '';
   };
 
   C.styleOk = function (n, style) {
@@ -44,6 +71,7 @@
 
   function seedFrontier(G, a) {
     const W = G.W, H = G.H, own = G.owner, f = a.from, t = a.to, mark = G._mark, rng = G.rng, terr = G.terrain;
+    const ob = C.objOf(G, G.nations[f], t), ox = ob % W, oy = (ob / W) | 0; a.obj = ob;
     a.heap.clear();
     const stamp = a.id;
     for (let y = 0; y < H; y++) {
@@ -51,7 +79,7 @@
       for (let x = 0; x < W; x++) {
         const i = row + x; if (own[i] !== t) continue;
         if ((x > 0 && own[i - 1] === f) || (x < W - 1 && own[i + 1] === f) || (y > 0 && own[i - W] === f) || (y < H - 1 && own[i + W] === f)) {
-          mark[i] = stamp; a.heap.push(a.base + TERR[terr[i]].cost * (0.5 + rng.next()), i);
+          mark[i] = stamp; a.heap.push(a.base + TERR[terr[i]].cost * (0.5 + rng.next()) + (ob >= 0 ? C.OBJK * (Math.abs(x - ox) + Math.abs(y - oy)) : 0), i);
         }
       }
     }
@@ -188,13 +216,20 @@
     const lure = ID.mod(D, 'lure');
     let spd = Ad.speed * (1 + ID.mod(A, 'speed')) * (1 + lure);
     if (Ad.blitz && war && G.tick - war.start < 150) spd *= 1 + Ad.blitz;
+    if ((C.POSTURE[D.posture] || {}).depth) spd *= 1.06;
+    const ob = C.objOf(G, A, a.to); if (ob !== a.obj) { a.obj = ob; a.scan = -999; }
+    if (ob >= 0) spd *= 1.1; // a Schwerpunkt: faster, with exposed flanks
+    if (a.surge > G.tick) spd *= 1.25;
     const rate = BASE_RATE * Math.sqrt(Math.min(heap.size, 500) + 4) * clamp(0.25 + 0.6 * ratio, 0.3, 1.8) * S.speed * e * share * (1 + 0.04 * A.tech.mil) * spd;
     a.prog = Math.min(a.prog + rate, 40);
     const dd = D.troops / Math.max(D.tiles, 40);
     const atk = A.a.atk * e, def = D.a.def;
     const igT = S.ignoreTerrain || 0, igF = S.ignoreFort || 0;
     const holdFast = Dd.holdFast && ratio > 1 ? 1 + Dd.holdFast : 1;
-    const alossK = Ad.aloss * Math.max(0.4, 1 + ID.mod(A, 'aloss')) * (lure ? 1 + lure * 1.33 : 1);
+    const depthK = (C.POSTURE[D.posture] || {}).depth ? (D.flags.ld_depth ? 1.6 : 1.3) : 1;
+    const alossK = Ad.aloss * Math.max(0.4, 1 + ID.mod(A, 'aloss')) * (lure ? 1 + lure * 1.33 : 1) * depthK * (a.obj >= 0 ? 1.06 : 1);
+    const dlossK = depthK > 1 ? (D.flags.ld_depth ? 0.6 : 0.75) : 1;
+    const ox = a.obj % W, oy = (a.obj / W) | 0, hk = a.obj >= 0 ? C.OBJK : 0;
     const cityK = Dd.cityDef * (1 + ID.mod(D, 'cityDef')), capP = D.capital >= 0 ? G.prov[D.capital] : -1;
     const cutK = Dd.logistics ? 0.55 : 0.25;
     let libN = 0;
@@ -225,24 +260,46 @@
       let la = dd * tdef * (dmul / amul) * lossMul * alossK * (cutT ? cutK : 1);
       if (a.amphib > 0) { la *= 1.5; a.amphib--; }
       if (la < 0.012) la = 0.012;
-      const ld = Math.min(D.troops, dd * (cutT ? 1.0 : 0.55) * S.lossD * Math.sqrt(clamp(amul / dmul, 0.4, 2.5)));
+      const ld = Math.min(D.troops, dd * (cutT ? 1.0 : 0.55) * S.lossD * dlossK * Math.sqrt(clamp(amul / dmul, 0.4, 2.5)));
       a.troops -= la; A.pop -= la; A.losses += la; D.kills += la; A.casM += la;
       D.troops -= ld; D.pop -= ld; D.losses += ld; A.kills += ld; D.casM += ld;
       a.prog -= cost; a.taken++; n++;
       if (war) { if (war.a === a.from) war.ta++; else war.tb++; }
       ID.setOwner(G, i, a.from);
+      if (i === a.obj) { C.objectiveTaken(G, a, A, D, i); }
       if (Ad.liberate && ++libN % 18 === 0 && ID.docSeed) ID.docSeed(G, D, A.ideo, 9, 1, A.id); // revolutionary war: the front raises the enemy's workers
-      const np = pr + 0.01;
-      if (x > 0 && own[i - 1] === a.to && mark[i - 1] !== a.id) { mark[i - 1] = a.id; heap.push(np + TERR[terr[i - 1]].cost * (0.6 + 0.8 * rng.next()), i - 1); }
-      if (x < W - 1 && own[i + 1] === a.to && mark[i + 1] !== a.id) { mark[i + 1] = a.id; heap.push(np + TERR[terr[i + 1]].cost * (0.6 + 0.8 * rng.next()), i + 1); }
-      if (y > 0 && own[i - W] === a.to && mark[i - W] !== a.id) { mark[i - W] = a.id; heap.push(np + TERR[terr[i - W]].cost * (0.6 + 0.8 * rng.next()), i - W); }
-      if (y < H - 1 && own[i + W] === a.to && mark[i + W] !== a.id) { mark[i + W] = a.id; heap.push(np + TERR[terr[i + W]].cost * (0.6 + 0.8 * rng.next()), i + W); }
+      const hi0 = hk ? hk * (Math.abs(x - ox) + Math.abs(y - oy)) : 0, np = pr + 0.01 - hi0;
+      if (x > 0 && own[i - 1] === a.to && mark[i - 1] !== a.id) { mark[i - 1] = a.id; heap.push(np + TERR[terr[i - 1]].cost * (0.6 + 0.8 * rng.next()) + (hk ? hk * (Math.abs(x - 1 - ox) + Math.abs(y - oy)) : 0), i - 1); }
+      if (x < W - 1 && own[i + 1] === a.to && mark[i + 1] !== a.id) { mark[i + 1] = a.id; heap.push(np + TERR[terr[i + 1]].cost * (0.6 + 0.8 * rng.next()) + (hk ? hk * (Math.abs(x + 1 - ox) + Math.abs(y - oy)) : 0), i + 1); }
+      if (y > 0 && own[i - W] === a.to && mark[i - W] !== a.id) { mark[i - W] = a.id; heap.push(np + TERR[terr[i - W]].cost * (0.6 + 0.8 * rng.next()) + (hk ? hk * (Math.abs(x - ox) + Math.abs(y - 1 - oy)) : 0), i - W); }
+      if (y < H - 1 && own[i + W] === a.to && mark[i + W] !== a.id) { mark[i + W] = a.id; heap.push(np + TERR[terr[i + W]].cost * (0.6 + 0.8 * rng.next()) + (hk ? hk * (Math.abs(x - ox) + Math.abs(y + 1 - oy)) : 0), i + W); }
       if (a.troops <= 0.5) break;
     }
     if (n && !G.headless && (a.from === G.player || a.to === G.player) && (G.tick & 3) === 0) ID.sfx(G, 'tick');
     if (D.tiles <= 0) { ID.Diplomacy.eliminate(G, D, A); return; }
     if (a.troops <= 0.5) endAttack(G, a, false);
   }
+
+  /* An objective falls: the defender reels, the attack surges forward for three weeks. */
+  C.objectiveTaken = function (G, a, A, D, i) {
+    const big = G.bld[i] === B.CITY || G.bld[i] === B.FORT || G.bld[i] === B.PORT || i === D.capital;
+    const k = (A.flags.ld_man ? 2 : 1) * (big ? 1.5 : 1);
+    D.stab -= 1.5 * k; D.we = Math.min(100, D.we + 3 * k); A.glory = Math.min(100, A.glory + 1.5 * k);
+    const rout = D.troops * 0.02 * k; D.troops -= rout; D.losses += rout; A.kills += rout; D.casM += rout;
+    a.surge = G.tick + 20 * (A.flags.ld_man ? 1.5 : 1);
+    if (A.objs) delete A.objs[D.id];
+    a.obj = -1; a.scan = -999;
+    const P = G.provinces[G.prov[i]];
+    if (A.id === G.player || D.id === G.player) ID.news(G, (A.id === G.player ? 'Objective taken: ' : 'The enemy takes ') + (P && P.name ? P.name : 'the objective') + '. ' + ID.fmtPop(rout) + ' ' + (A.id === G.player ? 'enemy troops routed; the attack surges forward.' : 'of our troops routed.'), A.id === G.player ? 'good' : 'war', A.id, D.id);
+    ID.fx(G, 'capital', i, {});
+  };
+  /* The AI's pick: the enemy city nearest its own capital, or the enemy capital. */
+  C.aiObjective = function (G, n, e) {
+    const W = G.W, cx = n.capital % W, cy = (n.capital / W) | 0; let best = -1, bd = 1e9;
+    for (const i of G.blist) { if (G.owner[i] !== e.id || (G.bld[i] !== B.CITY && G.bld[i] !== B.FORT)) continue; const d = Math.abs(i % W - cx) + Math.abs(((i / W) | 0) - cy); if (d < bd) { bd = d; best = i; } }
+    if (best < 0 && e.capital >= 0 && G.owner[e.capital] === e.id) best = e.capital;
+    return best;
+  };
 
   /* ---------------------------------------------------------------- naval */
   C.navalRange = (G, n) => ID.ERAS[ID.eraOf(G.tick)].range * (ID.ideo(n).flags.navalPower ? 1.4 : 1);
@@ -392,7 +449,7 @@
     }
     return false;
   };
-  C.abilGold = (n, ab) => Math.round(ab.gold * (n.a.dp && n.a.dp.precision && !ab.doctrine ? 0.6 : 1));
+  C.abilGold = (n, ab) => Math.round(ab.gold * (n.a.dp && n.a.dp.precision && !ab.doctrine ? 0.6 : 1) * (n.flags.ld_fire && !ab.doctrine ? 0.7 : 1));
   C.abilCd = (n, ab) => Math.round(ab.cd * (n.a.dp && n.a.dp.precision && !ab.doctrine ? 0.75 : 1) * (ab.doctrine && ID.Doctrine && ID.Doctrine.mastered(n) ? 0.7 : 1));
   C.abilBlock = function (G, n, key, tile) {
     const ab = C.ABIL[key]; if (!ab) return 'Unknown order.';
@@ -444,7 +501,7 @@
       return '';
     }
     const D = G.nations[G.owner[tile]], W = G.W, H = G.H, x0 = tile % W, y0 = (tile / W) | 0;
-    const kill = Math.min(D.troops, D.troops * ab.kill * (1 + 0.08 * n.tech.mil) * (n.a.dp && n.a.dp.precision ? 1.35 : 1) / Math.max(0.7, D.a.def || 1));
+    const kill = Math.min(D.troops, D.troops * ab.kill * (1 + 0.08 * n.tech.mil) * (n.a.dp && n.a.dp.precision ? 1.35 : 1) * (n.flags.ld_fire ? 1.25 : 1) / Math.max(0.7, D.a.def || 1));
     D.troops -= kill; D.pop -= kill; D.losses += kill; D.casM += kill; n.kills += kill;
     let wrecked = 0;
     for (let dy = -ab.r; dy <= ab.r; dy++) for (let dx = -ab.r; dx <= ab.r; dx++) {

@@ -321,6 +321,7 @@
     for (const a of G.attacks) if (a.to === n.id) incoming += a.troops;
     for (const e of enemies) if (Dp.warScore(G, n, e) < -0.25) losing = true;
     n.a.losing = losing;
+    { const want = losing ? (n.flags.ld_depth ? 'depth' : 'defend') : n.nwars && n.troops > n.pop * ID.maxMob(n) * 0.6 && G.rng.chance(0.5) ? 'attack' : 'balanced'; if ((n.posture || 'balanced') !== want && (!n.postureAt || G.tick - n.postureAt > 120)) C.setPosture(G, n, want); }
     // landward enemies sorted by threat
     const land = enemies.filter((e) => ID.borders(G, n.id, e.id) > 0);
     land.sort((a, c) => Dp.power(c) - Dp.power(a));
@@ -340,6 +341,7 @@
       } else if (e.troops < 8 && pool > 20 && !mine) commit = pool * 0.3;
       commit = Math.min(commit, pool * cap);
       if (commit > Math.max(5, target * 0.04)) {
+        if (C.objOf(G, n, e.id) < 0 && G.rng.chance(0.5)) { const t = C.aiObjective(G, n, e); if (t >= 0) (n.objs = n.objs || {})[e.id] = t; }
         const r = C.launch(G, n.id, e.id, commit, pickStyle(G, n, e, pool));
         if (r && typeof r !== 'string') pool = n.troops;
       }

@@ -120,7 +120,7 @@
     legit: ['Legitimacy', 'pt'], stab: ['Stability', 'pt'], auth: ['Authority a month', 'pm'], prod: ['Industry', 'pct'], eff: ['Efficiency', 'pct'], food: ['Food', 'pct'],
     atk: ['Attack', 'pct'], def: ['Defence', 'pct'], sci: ['Research', 'pct'], unrest: ['Unrest', 'pt', 1], ls: ['Living standards', 'pt'], rev: ['Revenue', 'pct'],
     trade: ['Trade income', 'pct'], opp: ['Opposition growth', 'pm', 1], conf: ['Business confidence', 'pt'], dist: ['Plan distortion', 'pm', 1], vote: ['Vote', 'pct'],
-    regen: ['Troop recovery', 'pct'], growth: ['Population growth', 'pct'], coup: ['Coup risk', 'pct', 1], driftK: ['Drift speed', 'pct', 1], wePace: ['War weariness growth', 'pct', 1],
+    regen: ['Troop recovery', 'pct'], growth: ['Population growth', 'pct'], speed: ['Front speed', 'pct'], aloss: ['Losses in attack', 'pct', 1], mob: ['Mobilisation ceiling', 'pct'], coup: ['Coup risk', 'pct', 1], driftK: ['Drift speed', 'pct', 1], wePace: ['War weariness growth', 'pct', 1],
   };
   Dc.describe = function (m) {
     const out = [];

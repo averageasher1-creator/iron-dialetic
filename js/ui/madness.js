@@ -1,7 +1,6 @@
-/* IRON DIALECTIC — the autocrat's madness. Under an absolute monarch or a personal dictator the
-   interface itself starts to lie: propaganda cards drift across the map, the screen takes on the
-   regime's tint, figures in the top band flicker to impossible values, and at the height of the cult
-   the whole picture glitches and shouts. Nothing here blocks input: every layer ignores the pointer.
+/* IRON DIALECTIC — the autocrat's banner. Under an absolute monarch or a personal dictator a great
+   banner of slogans sweeps across the screen from time to time: rarely and quietly at first, often,
+   wide and loud at the height of the cult. It never takes the pointer.
    The level (0–100) rises with authority, the cult or the crown, years in power, censorship, the
    political police, the ruler's age, a fulfilled destiny, and fear when things fall apart. */
 (function () {
@@ -39,69 +38,49 @@
     ],
   };
   const MARK = { crown: 'THE CROWN REMEMBERS', leader: '{LN} IS WATCHING' };
-  const FLASH = { crown: ['LONG LIVE THE CROWN', 'KNEEL', 'THE HOUR BEFORE THE FALL'], leader: ['LONG LIVE {LN}', 'APPLAUD', 'HE SEES YOU'] };
-  const LIES = { 'sv-stab': ['100', 'ETERNAL', '∞'], 'sv-food': ['PLENTY', '∞'], 'sv-legit': ['DIVINE', '100', 'ABSOLUTE'], 'sv-gold': ['BOUNDLESS', '∞'], 'sv-troops': ['INVINCIBLE', '∞'], 'sv-pop': ['ALL OF THEM', 'LOYAL'], 'sv-ind': ['GLORIOUS'], 'sv-auth': ['TOTAL', '100'] };
 
-  let root = null, pops = null, mark = null, flash = null, curStage = -1, curKind = null, tPop = 0, tLie = 0, tGlitch = 0, tFlash = 0;
+  let root = null, track = null, curKind = null, tNext = 20, tOff = 0, showing = false;
   const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function fill(t, n) {
     const L = (n.leader.title ? n.leader.title + ' ' : '') + n.leader.name;
     return t.replace(/\{LN\}/g, n.leader.name.toUpperCase()).replace(/\{L\}/g, L).replace(/\{N\}/g, n.name).replace(/\{A\}/g, n.adj);
   }
   function build() {
-    root = document.createElement('div'); root.id = 'madfx'; root.setAttribute('aria-hidden', 'true');
-    root.innerHTML = '<div class="mtint"></div><div class="mvig"></div><div class="mscan"></div><div class="mmark"></div><div class="mpops"></div><div class="mflash"></div>';
+    root = document.createElement('div'); root.id = 'madban'; root.setAttribute('aria-hidden', 'true');
+    root.innerHTML = '<div class="mb-track"></div>';
     document.getElementById('app').appendChild(root);
-    pops = root.querySelector('.mpops'); mark = root.querySelector('.mmark'); flash = root.querySelector('.mflash');
+    track = root.querySelector('.mb-track');
   }
-  function setStage(st, kind, n) {
-    const b = document.body;
-    for (let k = 1; k <= 4; k++) b.classList.toggle('mad-' + k, st >= k);
-    b.classList.toggle('mad-crown', st > 0 && kind === 'crown'); b.classList.toggle('mad-leader', st > 0 && kind === 'leader');
-    if (mark) mark.textContent = st >= 3 && kind ? fill(MARK[kind], n) : '';
-    curStage = st; curKind = kind;
+  /* pick slogans for the stage: the higher the stage, the more of the shouted, all-capitals lines */
+  function slogans(n, kind, st) {
+    const pool = LINES[kind], out = [], tier = Math.min(4, st) - 1;
+    for (let k = 0; k < 3; k++) { const t = Math.random() < 0.6 ? tier : Math.floor(Math.random() * (tier + 1)); const L = pool[Math.max(0, t)]; out.push(fill(L[Math.floor(Math.random() * L.length)], n).toUpperCase()); }
+    out.push(fill(MARK[kind], n));
+    return out;
   }
-  function popup(n, kind, st) {
-    const pool = LINES[kind]; const tier = Math.min(st, 4) - 1;
-    const src = Math.random() < 0.65 ? pool[Math.max(0, tier)] : pool[Math.floor(Math.random() * (tier + 1))];
-    const t = fill(src[Math.floor(Math.random() * src.length)], n);
-    const d = document.createElement('div'); d.className = 'mpop t' + (tier + 1) + (t === t.toUpperCase() ? ' caps' : '');
-    const W = innerWidth, H = innerHeight;
-    d.style.left = Math.round(W * (0.12 + Math.random() * 0.62)) + 'px'; d.style.top = Math.round(H * (0.14 + Math.random() * 0.58)) + 'px';
-    d.style.setProperty('--rot', ((Math.random() - 0.5) * (st >= 3 ? 14 : 6)).toFixed(1) + 'deg');
-    d.innerHTML = '<span>' + esc(t) + '</span>';
-    while (pops.childElementCount >= (st >= 4 ? 4 : 2)) pops.firstChild.remove(); // loud, never a wall
-    pops.appendChild(d);
-    setTimeout(() => d.remove(), st >= 4 ? 3200 : 4200);
+  function show(n, kind, st) {
+    const L = slogans(n, kind, st), sep = '<i>' + (kind === 'crown' ? '♛' : '★') + '</i>';
+    const run = L.map((t) => '<b>' + esc(t) + '</b>').join(sep) + sep;
+    track.innerHTML = '<div>' + run + run + '</div>';
+    root.className = 'on k-' + kind + ' s' + st + (reduced() ? ' still' : '');
+    root.style.setProperty('--loop', (10 + L.join('').length * 0.12).toFixed(1) + 's');
+    showing = true; tOff = [0, 7, 9, 11, 14][st];
+    if (ID.Audio && ID.Audio.play && st >= 3) ID.Audio.play('stamp');
   }
-  function lie(st) {
-    const ids = Object.keys(LIES), id = ids[Math.floor(Math.random() * ids.length)], el = document.getElementById(id); if (!el) return;
-    const opts = LIES[id]; el.textContent = opts[Math.floor(Math.random() * opts.length)];
-    el.classList.add('mlie'); setTimeout(() => el.classList.remove('mlie'), st >= 4 ? 1600 : 1100);
-  }
-  function doFlash(n, kind) {
-    const L = FLASH[kind]; flash.textContent = fill(L[Math.floor(Math.random() * L.length)], n);
-    flash.classList.remove('on'); void flash.offsetWidth; flash.classList.add('on');
-    if (ID.Audio && ID.Audio.play) ID.Audio.play('stamp');
-  }
-  function glitch() { const a = document.getElementById('app'); a.classList.remove('glitch'); void a.offsetWidth; a.classList.add('glitch'); setTimeout(() => a.classList.remove('glitch'), 260); }
+  function hide() { if (root) root.className = root.className.replace(/\bon\b/, '').trim(); showing = false; }
 
-  M.off = function () { if (curStage !== 0) setStage(0, null, null); if (pops) pops.innerHTML = ''; };
+  M.off = function () { hide(); };
   M.frame = function (G, dt) {
     const n = G && G.nations[G.player];
     if (!n || UI.settings.madness === false || G.over) { M.off(); return; }
     const kind = M.kind(n), lv = kind ? M.level(G, n) : 0, st = M.stage(lv);
     n.a.madness = lv;
     if (!root) build();
-    if (st !== curStage || kind !== curKind) setStage(st, kind, n);
-    if (!st) return;
+    if (!st || kind !== curKind) { curKind = kind; if (!st) { hide(); return; } }
     const live = !G.paused && !UI.modalKind;
-    if (!live) return;
-    tPop += dt; tLie += dt; tGlitch += dt; tFlash += dt;
-    const every = [0, 38, 20, 10, 5][st];
-    if (tPop > every * (0.6 + Math.random() * 0.8)) { tPop = 0; popup(n, kind, st); if (st >= 4 && Math.random() < 0.4) popup(n, kind, st); }
-    if (st >= 3 && tLie > (st >= 4 ? 2.2 : 4.5)) { tLie = 0; lie(st); }
-    if (st >= 4 && !reduced() && tGlitch > 7 + Math.random() * 9) { tGlitch = 0; glitch(); }
-    if (st >= 4 && tFlash > 50 + Math.random() * 40) { tFlash = 0; doFlash(n, kind); }
+    if (!live) { if (showing) hide(); return; }
+    if (showing) { tOff -= dt; if (tOff <= 0) { hide(); tNext = [0, 75, 50, 32, 20][st] * (0.7 + Math.random() * 0.6); } return; }
+    tNext -= dt;
+    if (tNext <= 0) show(n, kind, st);
   };
 })();

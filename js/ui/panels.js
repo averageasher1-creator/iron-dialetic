@@ -344,6 +344,9 @@
         '<li><b>To attack</b>, be at war, select the enemy on the map, set the Commit slider, pick a style, press Attack. The committed troops leave the pool and eat into enemy land tile by tile.</li>' +
         '<li><b>Each tile costs more</b> where the defender’s pool is dense over its territory, on rough ground, across rivers, in cities and under a fortress.</li>' +
         '<li><b>What you commit cannot defend.</b> An empty pool makes every tile of yours cheap.</li>' +
+        '<li><b>Objectives.</b> Select an enemy city or capital and press <i>Make this the objective</i>. The offensive bends into a spearhead toward it: 10% faster, a little costlier on its flanks, and good at cutting off pockets. When it falls the enemy loses troops, stability and heart, and your attack surges for three weeks.</li>' +
+        '<li><b>Posture</b> (on the war bar): Offensive, Balanced, Dig in or Elastic defence. An elastic defence gives ground slowly and makes every enemy tile expensive. Changing posture costs twenty days of reorganisation.</li>' +
+        '<li><b>Land doctrine</b>: the staff college in the general programme opens four rival schools (manoeuvre, firepower, defence in depth, the nation in arms). You can follow only one.</li>' +
         '<li><b>Encirclement:</b> land cut off from the capital with no port loses supply and surrenders after about forty days, taking its share of the pool with it.</li>' +
         '<li><b>Naval landings</b> need a port. Select an enemy coastal tile and choose Naval landing.</li>' +
         '<li><b>Capitals:</b> a state that loses its capital and two thirds of its land capitulates. You may annex it, install your system, or take an indemnity.</li>' +
