@@ -117,7 +117,7 @@
     const run = (id) => ID.Events.runDecision(G, n, id) === '';
     const I = ID.ideo(n), rng = G.rng, ids = ID.Events.decisionsFor(G, n).map((d) => d.id);
     const has = (id) => ids.indexOf(id) >= 0;
-    if (n.coupRisk > 0.02 && has('purge_officers') && rng.chance(0.4)) run('purge_officers');
+    if (n.coupRisk > (ID.leaderLean(n, 'purge') ? 0.01 : 0.02) && has('purge_officers') && rng.chance(0.4)) run('purge_officers');
     if (n.discipline < 40 && has('party_purge')) run('party_purge');
     if (n.a.unrest > 45 && has('martial_law')) run('martial_law');
     if (n.legit < 42 && has('propaganda_drive') && n.gold > 120) run('propaganda_drive');
@@ -275,7 +275,7 @@
       const ratio = myP / Math.max(1, theirs);
       const op = ID.op(G, n.id, o.id);
       const cb = Dp.casusBelli(G, n, o);
-      let s = (Math.min(ratio, 2.4) - 1.2) * 1.0 + clamp(-op / 100, -0.5, 1) * 0.6 + (cb ? 0.28 : 0) - 1.2 + I.dip.agg * 0.9 * ERA_AGG[era];
+      let s = (Math.min(ratio, 2.4) - 1.2) * 1.0 + clamp(-op / 100, -0.5, 1) * 0.6 + (cb ? 0.28 : 0) - 1.2 + I.dip.agg * 0.9 * ERA_AGG[era] + ID.leaderLean(n, 'agg');
       if (ratio < 0.9) s -= 0.5;
       if (o.nwars) s += 0.1;
       if (o.civil && G.nations[o.civil] && G.nations[o.civil].alive) s += 0.3;
@@ -352,6 +352,14 @@
         if (G.owner[t] === a.to) { if (n.tech.mil >= 3 && n.gold > 220 && !C.abilBlock(G, n, 'airraid', t)) C.useAbil(G, n, 'airraid', t); else if (!C.abilBlock(G, n, 'barrage', t)) C.useAbil(G, n, 'barrage', t); }
       }
       if (losing && n.gold > 150 && !C.abilBlock(G, n, 'reserves')) C.useAbil(G, n, 'reserves');
+      // the doctrine's own order
+      const ord = ID.Doctrine.orderOf(n);
+      if (ord && G.rng.chance(0.35)) {
+        let tile = null;
+        if (!ord.self) { const fr = G.attacks.filter((x) => x.from === n.id && x.to && x.heap.size); if (fr.length) { const x = fr[G.rng.int(0, fr.length - 1)], v = x.heap.v; tile = v[G.rng.int(0, v.length - 1)]; } else { const e = enemies[0]; tile = e ? e.capital : null; } }
+        let want = false; try { want = !ord.ai || ord.ai(G, n); } catch (e) { want = false; }
+        if (want && tile !== -1 && !C.abilBlock(G, n, ord.key, tile)) C.useAbil(G, n, ord.key, tile);
+      }
     }
     // naval landings against enemies we cannot reach by land
     if (n.nb[B.PORT] && readiness > 0.6 && (n.a.navalCd || 0) <= G.tick) {
@@ -393,5 +401,6 @@
     else if (phase === 1) diplomacy(G, n);
     else decisions(G, n);
     if (n.nwars && phase !== 0) build(G, n);
+    if (phase !== 1 || n.stab < 40) ID.Doctrine.aiMonth(G, n);
   };
 })();

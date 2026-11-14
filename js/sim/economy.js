@@ -233,7 +233,7 @@
 
     /* equipment */
     const eq = clamp(0.62 + arms / Math.max(1, n.troops * 0.035) * 0.38, 0.62, 1.35) - (n.a.shortage ? 0.1 : 0);
-    n.equip += (eq - n.equip) * 0.1;
+    n.equip += (eq - n.equip) * 0.1 * (eq > n.equip && n.a.dp ? n.a.dp.equipRegen : 1);
 
     /* research */
     let pts = science * (1 + pressLaw.sci + (I.flags.sciBonus || 0) - (I.flags.sciPenalty || 0)) * (0.7 + n.fs.intelligentsia / 160) * (1 + ID.mod(n, 'sci'));

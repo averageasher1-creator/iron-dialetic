@@ -28,7 +28,7 @@
     const playing = ID.Audio.anthemPlaying && ID.Audio.anthemPlaying();
     let h = '<div class="dlg xwide nation"><div class="dhd"><div class="k">THE NATION</div><div class="d">' + ID.dateOf(G.tick).str + '</div><button class="x" data-act="closeModal"' + tip('Close (Esc)') + '>✕</button></div>';
     h += '<div class="nhero" style="--nc:' + hex(n.color) + '">' + bigFlag(n) + '<div class="nh"><h1>' + esc(n.name) + '</h1>' + (ep ? '<div class="epis">' + ep + '</div>' : '') +
-      '<div class="motto">“' + esc(id.motto) + '”</div><div class="nmeta">' + esc(I.name) + ' · ' + esc((n.leader.title ? n.leader.title + ' ' : '') + n.leader.name) + '</div>' +
+      '<div class="motto">“' + esc(id.motto) + '”</div><div class="nmeta">' + esc(I.name) + ' · ' + esc((n.leader.title ? n.leader.title + ' ' : '') + n.leader.name) + (n.leader.traits && UI.traitTag ? ' ' + n.leader.traits.map(UI.traitTag).join(' ') : '') + '</div>' +
       '<button class="anth' + (playing ? ' on' : '') + '" data-act="anthem"' + tip('Every state has its own anthem, written from its name and its creed. It changes when the regime does.') + '>' + (playing ? '■ Stop' : '▶ Play the anthem') + ': <i>' + esc(id.anthem) + '</i></button></div></div>';
     h += '<div class="dbd ncols"><div>';
     h += '<div class="sec"><h3>The country</h3><p class="lore">' + esc(id.lore) + '</p></div>';

@@ -27,7 +27,9 @@
     theocracy: 'Supreme Guardian', agrarian: 'Elder of the Assembly', junta: 'General', corporatist: 'Head of Government', technocracy: 'Director-General', personalist: 'The Leader',
     merchant: 'Doge', cybernetic: 'Chief Co-ordinator', natpop: 'The Tribune',
   };
-  ID.genLeader = (rng, ideo) => ({ name: rng.pick(FIRST) + ' ' + rng.pick(LAST), age: rng.int(38, 62), title: TITLES[ideo] || 'Head of State' });
+  ID.genLeader = (rng, ideo) => ({ name: rng.pick(FIRST) + ' ' + rng.pick(LAST), age: rng.int(38, 62), title: TITLES[ideo] || 'Head of State', traits: ID.rollTraits ? ID.rollTraits(rng, ideo) : [] });
+  /* the sum of a leader's AI leanings: agg (war appetite), peace (willingness to settle), reform, purge */
+  ID.leaderLean = (n, k) => { let s = 0; for (const t of (n.leader && n.leader.traits) || []) { const T = ID.TRAITS && ID.TRAITS[t]; if (T && T.ai && T.ai[k]) s += T.ai[k]; } return s; };
   ID.leaderTitle = (ideo) => TITLES[ideo] || 'Head of State';
   ID.nationTitle = (n, ideo) => ID.IDEOLOGIES[ideo].title.replace('{N}', n.base).replace('{A}', n.adj);
 

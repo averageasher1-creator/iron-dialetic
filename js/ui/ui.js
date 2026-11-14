@@ -94,7 +94,7 @@
   };
   acts.abil = (k) => {
     const G = UI.G, n = P(), ab = ID.Combat.ABIL[k];
-    if (ab.self) { UI.tryDo(ID.Combat.useAbil(G, n, k)); return; }
+    if (ab.self) { if (UI.tryDo(ID.Combat.useAbil(G, n, k)) && n.a.lastAbil && n.a.lastAbil.msg) UI.toast(ab.name + ': ' + n.a.lastAbil.msg, true); return; }
     const pre = ID.Combat.abilBlock(G, n, k, -1); if (pre && pre.indexOf('Select') !== 0 && pre.indexOf('Target') !== 0) { UI.tryDo(pre); return; }
     if (UI.sel >= 0 && G.owner[UI.sel] && G.owner[UI.sel] !== n.id && !ID.Combat.abilBlock(G, n, k, UI.sel)) { UI.fireAbil(k, UI.sel); return; }
     UI.aim = k; document.getElementById('map').classList.add('aim');
@@ -104,7 +104,7 @@
     const G = UI.G, n = P(); UI.aim = null; document.getElementById('map').classList.remove('aim');
     const r = ID.Combat.useAbil(G, n, k, tile);
     if (r) { UI.toast(r); ID.Audio.play('bad'); return; }
-    const la = n.a.lastAbil; if (la && la.key === k) UI.toast(ID.Combat.ABIL[k].name + ': ' + ID.fmtPop(la.kill) + ' enemy troops killed' + (la.wrecked ? ', ' + la.wrecked + ' building' + (la.wrecked > 1 ? 's' : '') + ' wrecked' : '') + '. The area is shaken.', true);
+    const la = n.a.lastAbil; if (la && la.key === k && la.msg != null) UI.toast(ID.Combat.ABIL[k].name + ': ' + la.msg, true); else if (la && la.key === k) UI.toast(ID.Combat.ABIL[k].name + ': ' + ID.fmtPop(la.kill) + ' enemy troops killed' + (la.wrecked ? ', ' + la.wrecked + ' building' + (la.wrecked > 1 ? 's' : '') + ' wrecked' : '') + '. The area is shaken.', true);
   };
   acts.attack = () => {
     const G = UI.G, n = P();
@@ -323,7 +323,9 @@
           h += UI.btn('Missile strike here', 'missile', 0, { off: typeof cm === 'string' ? cm : '', tip: 'Destroys about half the buildings within 3 tiles.' });
           if (me.tech.mil >= 6) h += UI.btn('Atomic strike here', 'missile', 1, { cls: 'red', off: typeof cn === 'string' ? cn : '', tip: '<h5>Atomic strike</h5>Destroys everything within 8 tiles and poisons the land for ten years.<hr><span class="bad">Every state’s opinion of you collapses, threat +50, your own clergy and intelligentsia recoil, and anyone who has the bomb may answer in kind.</span>' });
         }
-        for (const k of ['barrage', 'airraid']) { const ab = ID.Combat.ABIL[k]; h += UI.btn(ab.name + ' here <span>' + ab.gold + ' gold</span>', 'abil', k, { off: ID.Combat.abilBlock(G, me, k, i), tip: '<h5>' + ab.name + '</h5>' + esc(ab.desc) + '<hr>Range ' + ab.range + ' tiles from your land · radius ' + ab.r + ' · every ' + ab.cd + ' days' }); }
+        const dord = ID.Doctrine.orderOf(me);
+        const tk = ['barrage', 'airraid']; if (dord && !dord.self) tk.unshift(dord.key);
+        for (const k of tk) { const ab = ID.Combat.ABIL[k]; h += UI.btn(ab.name + ' here <span>' + ID.Combat.abilGold(me, ab) + ' gold</span>', 'abil', k, { off: ID.Combat.abilBlock(G, me, k, i), tip: '<h5>' + ab.name + '</h5>' + esc(ab.desc) + '<hr>Range ' + ab.range + ' tiles from your land · radius ' + ab.r + ' · every ' + ab.cd + ' days' }); }
         const ev = ID.Diplomacy.evalProposal(G, me, n, 'peace');
         h += UI.btn('Offer peace', 'propose', [n.id, 'peace'], { cls: 'ghost', off: ev.ok ? '' : ev.why, tip: 'Each side keeps what it holds. Five-year truce.' });
       } else {
@@ -356,7 +358,8 @@
     let h = '<div class="l1"><label' + tip('<h5>Commit</h5>The share of your uncommitted pool sent into the next attack or landing. What you send leaves the pool; what you keep defends everywhere at once.' + (cap < 1 ? '<hr><span class="warn">' + esc(I.name) + ': no single offensive may use more than ' + Math.round(cap * 100) + '%.</span>' : '')) + '>Commit</label><input type="range" min="5" max="' + Math.round(cap * 100) + '" step="5" value="' + Math.round(UI.commit * 100) + '" data-in="commit" id="in-commit"><b id="commit-v">' + Math.round(UI.commit * 100) + '% · ' + ID.fmtPop(tr) + '</b>' +
       (t ? UI.btn('Attack ' + esc(t.base), 'attack', null, { cls: 'red', id: 'b-attack', tip: 'Launch or reinforce the attack on ' + esc(t.name) + ' <span class="dim">(Enter)</span>' }) : n.nwars ? '<span class="dim" style="font-size:14px">Select an enemy on the map</span>' : '') +
       (wildOK ? UI.btn('Expand', 'expand', null, { cls: t ? 'ghost' : 'red', id: 'b-expand', tip: '<h5>Expand into the hinterland</h5>Claim unclaimed land along your frontier with ' + ID.fmtPop(tr) + ' troops. No war, no vote: the land is free for whoever takes it first. Your neighbours are racing for it too.' }) : '') + '</div>';
-    if (n.nwars) h += '<div class="styles orders">' + ['barrage', 'airraid', 'reserves'].map((k) => { const ab = ID.Combat.ABIL[k], why = ID.Combat.abilBlock(G, n, k, ab.self ? null : -1), soft = why && (why.indexOf('Select') === 0); const cd = (n.cd['ab_' + k] || 0) - G.tick; return UI.btn(ab.name + (cd > 0 ? ' <span class="num">' + cd + 'd</span>' : ' <span class="num">' + ab.gold + 'g</span>'), 'abil', k, { cls: 'sm ' + (UI.aim === k ? 'on' : 'ghost'), off: soft ? '' : why, tip: '<h5>' + ab.name + '</h5>' + esc(ab.desc) + (ab.self ? '' : '<hr>Click, then click enemy land within ' + ab.range + ' tiles of yours.') + '<br>Cost ' + ab.gold + ' gold · every ' + ab.cd + ' days' }); }).join('') + '</div>';
+    const dord = ID.Doctrine.orderOf(n), okeys = ['barrage', 'airraid', 'reserves']; if (dord) okeys.unshift(dord.key);
+    if (n.nwars) h += '<div class="styles orders">' + okeys.map((k) => { const ab = ID.Combat.ABIL[k], why = ID.Combat.abilBlock(G, n, k, ab.self ? null : -1), soft = why && (why.indexOf('Select') === 0); const cd = (n.cd['ab_' + k] || 0) - G.tick; const g = ID.Combat.abilGold(n, ab), ac = ID.Combat.abilCd(n, ab); return UI.btn(ab.name + (cd > 0 ? ' <span class="num">' + cd + 'd</span>' : ' <span class="num">' + (g ? g + 'g' : 'free') + '</span>'), 'abil', k, { cls: 'sm ' + (UI.aim === k ? 'on' : ab.doctrine ? 'dord' : 'ghost'), off: soft ? '' : why, tip: '<h5>' + ab.name + (ab.doctrine ? ' <span class="dim">· ' + esc(ID.ideo(n).name) + ' order</span>' : '') + '</h5>' + esc(ab.desc) + (ab.self ? '' : ab.range >= 999 ? '<hr>Click, then click the land of an enemy at war with you.' : '<hr>Click, then click enemy land within ' + ab.range + ' tiles of yours.') + '<br>Cost ' + (g ? g + ' gold' : 'nothing') + ' · every ' + ac + ' days' }); }).join('') + '</div>';
     if (n.nwars) h += '<div class="styles">' + Object.keys(ID.STYLES).map((k) => { const S = ID.STYLES[k], e = I.doctrine.styles[k] || 0, ok = ID.Combat.styleOk(n, k); return UI.btn(S.name + ' <span class="num">×' + e.toFixed(2) + '</span>', 'style', k, { cls: 'sm ' + (UI.style === k ? 'on' : 'ghost'), off: ok ? '' : S.needs === 'mil2' && n.tech.mil < 2 ? 'Needs military technology 2.' : 'Your doctrine cannot fight this way.', tip: '<h5>' + S.name + '</h5>' + esc(S.desc) + '<hr>Your doctrine: <b>×' + e.toFixed(2) + '</b> effectiveness' }); }).join('') + '</div>';
     if (mine.length || boats.length) {
       h += '<div class="chips">' + mine.map((a) => '<span class="chip"' + tip('Committed ' + ID.fmtPop(a.committed) + ', ' + a.taken + ' tiles taken' + (a.to ? ', ' + ID.STYLES[a.style].name.toLowerCase() : '') + '.') + '>→ ' + (a.to ? esc(G.nations[a.to].base) : 'Hinterland') + ' <b class="num">' + ID.fmtPop(a.troops) + '</b><button data-act="recall" data-a="' + a.id + '"' + tip('Recall the survivors. A tenth are lost withdrawing.') + '>recall</button></span>').join('') +

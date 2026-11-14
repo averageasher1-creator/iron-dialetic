@@ -461,7 +461,7 @@
     if (sc) for (const n of nats) ID.Focus.applySpirits(G, n);
     G.world.depressionAt = (rng.int(1927, 1933) - ID.START_YEAR) * 360 + rng.int(0, 359);
     G.historical = !!(opts.historical && sc && sc.id === 'meridia');
-    if (G.historical) { G.world.depressionAt = (1929 - ID.START_YEAR) * 360 + 9 * 30; ID.Story.init(G); }
+    if (G.historical) { G.world.depressionAt = (1929 - ID.START_YEAR) * 360 + 9 * 30; ID.Story.init(G); G.story.loose = opts.loose !== false; }
     ID.chron(G, 'world', 'The year ' + startYear + '. ' + nats.length + ' states divide the world between them.');
     return G;
   };

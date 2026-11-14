@@ -299,7 +299,7 @@
   };
 
   /* ================================================================ HANDBOOK */
-  const HELP_NAV = [['play', 'How to play'], ['ideos', 'Ideologies'], ['factions', 'Factions'], ['legit', 'Legitimacy'], ['war', 'War'], ['build', 'Land and buildings'], ['prog', 'Programmes and history']];
+  const HELP_NAV = [['play', 'How to play'], ['ideos', 'Ideologies'], ['factions', 'Factions'], ['legit', 'Legitimacy'], ['doc', 'Doctrines'], ['war', 'War'], ['build', 'Land and buildings'], ['prog', 'Programmes and history']];
   Pn.helpIdeo = function (id, G) {
     const I = ID.IDEOLOGIES[id], M = ID.ECON[I.econ.model], C = ID.CONTROL[I.control.type]; let h = '';
     h += '<div class="card sh" style="border-left:12px solid ' + I.css + '"><b style="font:800 26px/1.05 var(--cond)">' + esc(I.name) + '</b><div class="dim" style="font-size:14px">' + ID.FAMILIES[I.family].name + ' family</div><p class="lead" style="margin:6px 0 0">' + esc(I.short) + '</p></div>';
@@ -353,6 +353,7 @@
       return h;
     }
     if (pg === 'prog') return h + Pn.helpProg(G);
+    if (pg === 'doc') return h + (Pn.helpDoc ? Pn.helpDoc(G, n) : '');
     if (pg === 'build') {
       h += sec('Terrain', '<table class="t"><tr><th>Terrain</th><th class="n">Front speed</th><th class="n">Attacker’s cost</th><th class="n">People</th><th class="n">Food</th></tr>' + ID.TERRAIN.slice(1).map((t) => '<tr><td><span class="sw" style="background:rgb(' + t.col.join(',') + ')"></span>' + t.name + '</td><td class="n">÷' + t.cost + '</td><td class="n">×' + t.def + '</td><td class="n">' + t.pop + '</td><td class="n">' + t.food + '</td></tr>').join('') + '</table>');
       h += sec('Buildings', [1, 2, 3, 4, 5].map((t) => '<div class="card"><b>' + ID.BUILDINGS[t].name + '</b> <span class="dim" style="font-size:13.5px">' + ID.BUILDINGS[t].cost + ' gold and up · upkeep ' + ID.BUILDINGS[t].upkeep + '</span><p style="font-size:14.5px">' + esc(ID.BUILDINGS[t].desc) + '</p></div>').join('') + '<div class="note">Each building of a kind costs 14% more than the last. To build, select a tile of your own land.</div>');

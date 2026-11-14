@@ -90,7 +90,7 @@
   const S = (Sc.S = { scenario: 'meridia', seed: 0, size: 'std', difficulty: 'iron', nation: 0, ideo: null, challenge: null, startYear: 0, ironman: false, retry: false, historical: true });
   let SG = null;
   function genSetup() {
-    const opts = { scenario: S.scenario, seed: S.seed, size: S.size, difficulty: S.difficulty, headless: false, startYear: S.startYear || 0, challenge: S.challenge, ironman: S.ironman, historical: S.historical && !S.challenge };
+    const opts = { scenario: S.scenario, seed: S.seed, size: S.size, difficulty: S.difficulty, headless: false, startYear: S.startYear || 0, challenge: S.challenge, ironman: S.ironman, historical: S.historical && !S.challenge, loose: S.loose !== false };
     SG = ID.newGame(opts); SG.paused = true;
     R.setMode('political'); R.setGame(SG); R.quiet = true;
     const ns = ID.alive(SG);
@@ -126,9 +126,11 @@
       if (S.scenario === 'random') {
         h += '<div class="field"><label>Seed and size</label><div class="row nw"><input type="text" value="' + S.seed + '" data-change="seed" style="width:120px"' + tip('Type a number and press Enter') + '>' + btn('New seed', 'reroll', null, { cls: 'ghost' }) + '</div><div class="seg" style="margin-top:6px">' + Object.keys(ID.MAP_SIZES).map((k) => '<button class="' + (S.size === k ? 'on' : '') + '" data-act="setSize" data-a=\'"' + k + '"\'' + tip(ID.MAP_SIZES[k].desc) + '>' + ID.MAP_SIZES[k].name + '</button>').join('') + '</div></div>';
       }
-      if (S.scenario === 'meridia') h += '<div class="field"><label>History</label><div class="seg">' + [[true, 'Historical'], [false, 'Free']].map((x) => '<button class="' + (S.historical === x[0] ? 'on' : '') + '" data-act="setHist" data-a="' + x[0] + '">' + x[1] + '</button>').join('') + '</div><small>' + (S.historical
-        ? 'The century has a script: a great war in 1914, revolutions, the Slump of 1929, a second war in 1939, the blocs. Other countries follow the paths they took. When history reaches you, you choose.'
-        : 'No scripted events. Every country picks its own programme, and the century goes wherever it goes.') + '</small></div>';
+      if (S.scenario === 'meridia') { const mode = !S.historical ? 'free' : S.loose === false ? 'strict' : 'loose';
+        h += '<div class="field"><label>History</label><div class="seg">' + [['strict', 'As it happened'], ['loose', 'Divergent'], ['free', 'Free']].map((x) => '<button class="' + (mode === x[0] ? 'on' : '') + '" data-act="setHist" data-a=\'"' + x[0] + '"\'>' + x[1] + '</button>').join('') + '</div><small>' + (mode === 'strict'
+        ? 'The century has a script: a great war in 1914, revolutions, the Slump of 1929, a second war in 1939, the blocs. Other countries walk the paths they took. When history reaches you, you choose, and your choices open new chapters.'
+        : mode === 'loose' ? 'The same century, but other countries sometimes take the other road at a turning point, and it shows in what follows. No two campaigns run the same way. Your choices open new chapters.'
+        : 'No scripted events. Every country picks its own programme, and the century goes wherever it goes.') + '</small></div>'; }
       h += '<div class="field"><label>Difficulty</label><div class="seg">' + Object.keys(ID.DIFFICULTY).map((k) => '<button class="' + (S.difficulty === k ? 'on' : '') + '" data-act="setDiff" data-a=\'"' + k + '"\'' + tip(ID.DIFFICULTY[k].desc) + '>' + ID.DIFFICULTY[k].name + '</button>').join('') + '</div><small>' + esc(ID.DIFFICULTY[S.difficulty].desc) + '</small></div>';
     }
     h += '<div class="field"><label>Choose a state <span class="dim" style="font-weight:500">— or click one on the map</span></label>';
@@ -164,7 +166,7 @@
   acts.setScen = (a) => { S.scenario = a; S.nation = 0; S.ideo = null; genSetup(); renderSetup(); };
   acts.setSize = (a) => { S.size = a; S.nation = 0; genSetup(); renderSetup(); };
   acts.setDiff = (a) => { S.difficulty = a; renderSetup(); };
-  acts.setHist = (a) => { S.historical = !!a; genSetup(); renderSetup(); };
+  acts.setHist = (a) => { if (a === true || a === false) { S.historical = a; } else { S.historical = a !== 'free'; S.loose = a !== 'strict'; } genSetup(); renderSetup(); };
   acts.seed = (v) => { S.seed = (parseInt(v, 10) >>> 0) || ID.hashStr(String(v)); S.nation = 0; genSetup(); renderSetup(); };
   acts.reroll = () => { S.seed = (Math.random() * 1e6) | 0; S.nation = 0; genSetup(); renderSetup(); };
   acts.pickNation = (a) => { S.nation = a; S.ideo = null; const n = SG.nations[a]; R.focus(n.capital); R.selected = n.capital; renderSetup(); };

@@ -5,6 +5,7 @@
   const T = ID.T, B = ID.B, TERR = ID.TERRAIN, clamp = ID.clamp, MAXN = ID.MAXN;
   const C = (ID.Combat = {});
   const BASE_RATE = 0.095;
+  const DPZ = { holdFast: 0, homeDef: 1, cityDef: 1, capitalDef: 1, roughLoss: 1, roughDef: 1, speed: 1, aloss: 1, blitz: 0, liberate: 0, logistics: 0 };
 
   /* Combat multipliers for a nation, cached on n.a (refreshed monthly and after law changes). */
   C.refresh = function (G, n) {
@@ -15,12 +16,23 @@
     if (r.fervorMorale) morale *= 0.82 + n.fervor / 280;
     morale *= 1 - n.we / 320;
     if (n.trans > 0) morale *= 0.9;
+    // the doctrine's war trait
+    const dp = ID.Doctrine ? ID.Doctrine.war(n) : null; n.a.dp = dp;
+    let mat = 1, mart = 1, lead = 1;
+    if (dp) {
+      if (dp.moraleFloor) morale = Math.max(morale, dp.moraleFloor);
+      if (dp.brittle && (n.a.coreLost || 0) > 0.1) morale *= 1 - dp.brittle;
+      if (dp.materiel && G && n.nwars) { const en = ID.Diplomacy.enemies(G, n); if (en.length) { let si = 0; for (const e of en) si += e.ind || 1; mat = clamp(1 + 0.18 * Math.log2(Math.max(1, n.ind) / Math.max(1, si / en.length)), 0.88, 1.25); } }
+      if (dp.martyr && ((n.a.coreLost || 0) > 0.1 || n.stab < 35)) mart = 1 + dp.martyr;
+      if (dp.leaderAtk) lead = clamp(1 + (n.charisma - 50) * 0.003, 0.85, 1.15);
+    }
+    n.a.mat = mat;
     const tech = 1 + 0.07 * n.tech.mil;
     const mob = ID.LAWS.mobil.opts[n.laws.mobil].atk || 0, sec = ID.LAWS.security.opts[n.laws.security].atk || 0;
     const bonus = n.ai ? ID.DIFFICULTY[G.difficulty].aiBonus : 1;
     n.a.morale = morale;
-    n.a.atk = r.atk * d.atk * morale * n.equip * tech * (1 + mob + sec + ID.mod(n, 'atk')) * bonus;
-    n.a.def = r.def * d.def * morale * Math.pow(n.equip, 0.7) * tech * (1 + sec * 0.5 + ID.mod(n, 'def')) * bonus;
+    n.a.atk = r.atk * d.atk * morale * n.equip * tech * (1 + mob + sec + ID.mod(n, 'atk')) * bonus * mat * lead * (dp ? dp.atkMul : 1);
+    n.a.def = r.def * d.def * morale * Math.pow(n.equip, 0.7) * tech * (1 + sec * 0.5 + ID.mod(n, 'def')) * bonus * mat * mart;
     n.a.home = d.home; n.a.abroad = r.abroad || 1; n.a.rough = r.roughBonus || 1;
   };
 
@@ -171,12 +183,21 @@
     }
 
     const ratio = a.troops / Math.max(1, D.troops);
-    const rate = BASE_RATE * Math.sqrt(Math.min(heap.size, 500) + 4) * clamp(0.25 + 0.6 * ratio, 0.3, 1.8) * S.speed * e * share * (1 + 0.04 * A.tech.mil);
+    const war = ID.Diplomacy.warOf(G, a.from, a.to);
+    const Ad = A.a.dp || DPZ, Dd = D.a.dp || DPZ;
+    const lure = ID.mod(D, 'lure');
+    let spd = Ad.speed * (1 + ID.mod(A, 'speed')) * (1 + lure);
+    if (Ad.blitz && war && G.tick - war.start < 150) spd *= 1 + Ad.blitz;
+    const rate = BASE_RATE * Math.sqrt(Math.min(heap.size, 500) + 4) * clamp(0.25 + 0.6 * ratio, 0.3, 1.8) * S.speed * e * share * (1 + 0.04 * A.tech.mil) * spd;
     a.prog = Math.min(a.prog + rate, 40);
     const dd = D.troops / Math.max(D.tiles, 40);
     const atk = A.a.atk * e, def = D.a.def;
     const igT = S.ignoreTerrain || 0, igF = S.ignoreFort || 0;
-    const war = ID.Diplomacy.warOf(G, a.from, a.to);
+    const holdFast = Dd.holdFast && ratio > 1 ? 1 + Dd.holdFast : 1;
+    const alossK = Ad.aloss * Math.max(0.4, 1 + ID.mod(A, 'aloss')) * (lure ? 1 + lure * 1.33 : 1);
+    const cityK = Dd.cityDef * (1 + ID.mod(D, 'cityDef')), capP = D.capital >= 0 ? G.prov[D.capital] : -1;
+    const cutK = Dd.logistics ? 0.55 : 0.25;
+    let libN = 0;
     const holy = ID.ideo(A).flags.holyWar && (D.laws.religion === 'secular' || D.laws.religion === 'atheism') ? 1.2 : 1;
     let n = 0;
     while (a.prog > 0 && heap.size && n < 60) {
@@ -193,15 +214,15 @@
       if (S.open && tr.rough) { cost *= 3.2; lossMul *= 1.4; }
       if (G.river[i]) { cost *= 1.5; tdef *= 1.3; }
       if (fort) { cost *= 1 + 0.8 * (1 - igF); tdef *= 1 + 1.5 * (1 - igF); }
-      if (G.bld[i] === B.CITY) { tdef *= 2; cost *= 1.5; }
+      if (G.bld[i] === B.CITY) { tdef *= 2 * cityK; cost *= 1.5; }
       if (G.shock && G.shock.length && shocked(G, x, y, a.from, a.to)) { tdef *= 0.6; cost *= 0.75; }
-      let dmul = def, amul = atk * holy;
-      if (P.core === a.to) dmul *= D.a.home; else if (P.core === a.from) amul *= 1.15; else dmul *= 0.85;
+      let dmul = def * holdFast, amul = atk * holy;
+      if (P.core === a.to) { dmul *= D.a.home * Dd.homeDef; if (G.prov[i] === capP) dmul *= Dd.capitalDef; } else if (P.core === a.from) amul *= 1.15; else dmul *= 0.85;
       if (P.core !== a.from) amul *= A.a.abroad;
-      if (tr.rough) { amul *= A.a.rough; dmul *= D.a.rough; }
+      if (tr.rough) { amul *= A.a.rough; dmul *= D.a.rough * Dd.roughDef; lossMul *= Ad.roughLoss; }
       if (P.opp && P.oppStr > 30 && ID.ideo(A).flags.liberator && ID.IDEOLOGIES[P.opp].family === ID.ideo(A).family) amul *= 1.2;
       const cutT = G.cut[i] === 1;
-      let la = dd * tdef * (dmul / amul) * lossMul * (cutT ? 0.25 : 1);
+      let la = dd * tdef * (dmul / amul) * lossMul * alossK * (cutT ? cutK : 1);
       if (a.amphib > 0) { la *= 1.5; a.amphib--; }
       if (la < 0.012) la = 0.012;
       const ld = Math.min(D.troops, dd * (cutT ? 1.0 : 0.55) * S.lossD * Math.sqrt(clamp(amul / dmul, 0.4, 2.5)));
@@ -210,6 +231,7 @@
       a.prog -= cost; a.taken++; n++;
       if (war) { if (war.a === a.from) war.ta++; else war.tb++; }
       ID.setOwner(G, i, a.from);
+      if (Ad.liberate && ++libN % 18 === 0 && ID.docSeed) ID.docSeed(G, D, A.ideo, 9, 1, A.id); // revolutionary war: the front raises the enemy's workers
       const np = pr + 0.01;
       if (x > 0 && own[i - 1] === a.to && mark[i - 1] !== a.id) { mark[i - 1] = a.id; heap.push(np + TERR[terr[i - 1]].cost * (0.6 + 0.8 * rng.next()), i - 1); }
       if (x < W - 1 && own[i + 1] === a.to && mark[i + 1] !== a.id) { mark[i + 1] = a.id; heap.push(np + TERR[terr[i + 1]].cost * (0.6 + 0.8 * rng.next()), i + 1); }
@@ -370,10 +392,23 @@
     }
     return false;
   };
+  C.abilGold = (n, ab) => Math.round(ab.gold * (n.a.dp && n.a.dp.precision && !ab.doctrine ? 0.6 : 1));
+  C.abilCd = (n, ab) => Math.round(ab.cd * (n.a.dp && n.a.dp.precision && !ab.doctrine ? 0.75 : 1) * (ab.doctrine && ID.Doctrine && ID.Doctrine.mastered(n) ? 0.7 : 1));
   C.abilBlock = function (G, n, key, tile) {
     const ab = C.ABIL[key]; if (!ab) return 'Unknown order.';
+    if (ab.ideos && ab.ideos.indexOf(n.ideo) < 0) return 'Not part of your doctrine.';
     const cd = n.cd['ab_' + key] || 0; if (cd > G.tick) return 'Ready again in ' + (cd - G.tick) + ' days.';
-    if (n.gold < ab.gold) return 'Needs ' + ab.gold + ' gold.';
+    if (n.gold < C.abilGold(n, ab)) return 'Needs ' + C.abilGold(n, ab) + ' gold.';
+    if (ab.doctrine) {
+      if (!n.nwars) return 'Only in wartime.';
+      if (ab.can) { const w = ab.can(G, n); if (w) return w; }
+      if (ab.self) return '';
+      if (tile == null || tile < 0) return 'Select an enemy tile first.';
+      const o = G.owner[tile]; if (!o || o === n.id) return 'Target enemy land.';
+      if (!ID.atWar(G, n.id, o)) return 'You are not at war with ' + G.nations[o].name + '.';
+      if (ab.range < 999 && !C.nearOwn(G, n, tile, ab.range)) return 'Out of range: within ' + ab.range + ' tiles of your own land.';
+      return '';
+    }
     if (ab.air && n.tech.mil < 3) return 'Needs military technology 3.';
     if (ab.self) {
       if (!n.nwars) return 'Only in wartime.';
@@ -390,7 +425,17 @@
   C.useAbil = function (G, n, key, tile) {
     const why = C.abilBlock(G, n, key, tile); if (why) return why;
     const ab = C.ABIL[key];
-    n.gold -= ab.gold; n.cd['ab_' + key] = G.tick + ab.cd;
+    n.gold -= C.abilGold(n, ab); n.cd['ab_' + key] = G.tick + C.abilCd(n, ab);
+    if (ab.doctrine) {
+      const Dn = ab.self ? null : G.nations[G.owner[tile]];
+      const msg = ab.run(G, n, Dn, tile) || '';
+      n.a.lastAbil = { key, msg, t: G.tick };
+      if (!ab.self && tile >= 0) ID.fx(G, 'subvert', tile, { col: ID.ideo(n).color });
+      if (n.id === G.player) { ID.news(G, ab.name + ': ' + msg, 'war', n.id); ID.sfx(G, 'drums'); }
+      else if (Dn && Dn.id === G.player) ID.news(G, n.name + ' orders: ' + ab.name + '. ' + msg, 'war', n.id, Dn.id);
+      ID.Combat.refresh(G, n);
+      return '';
+    }
     if (ab.self) {
       const add = Math.max(0, Math.min(n.pop * 0.02, n.pop * ID.maxMob(n) * 1.2 - n.troops));
       n.troops += add; n.sm.workers -= 4; n.sm.peasants -= 5; n.we = Math.min(100, n.we + 3); n.equip = Math.max(0.5, n.equip - 0.04);
@@ -399,7 +444,7 @@
       return '';
     }
     const D = G.nations[G.owner[tile]], W = G.W, H = G.H, x0 = tile % W, y0 = (tile / W) | 0;
-    const kill = Math.min(D.troops, D.troops * ab.kill * (1 + 0.08 * n.tech.mil) / Math.max(0.7, D.a.def || 1));
+    const kill = Math.min(D.troops, D.troops * ab.kill * (1 + 0.08 * n.tech.mil) * (n.a.dp && n.a.dp.precision ? 1.35 : 1) / Math.max(0.7, D.a.def || 1));
     D.troops -= kill; D.pop -= kill; D.losses += kill; D.casM += kill; n.kills += kill;
     let wrecked = 0;
     for (let dy = -ab.r; dy <= ab.r; dy++) for (let dx = -ab.r; dx <= ab.r; dx++) {
@@ -464,7 +509,7 @@
     for (let id = 0; id < comps.length; id++) {
       const c = comps[id]; if (c.st !== 1) continue;
       const n = G.nations[c.o]; if (!n.alive || !n.nwars) continue;
-      const fl = ID.ideo(n).flags; const hold = fl.noDecap || fl.partisans ? 12 : 4;
+      const fl = ID.ideo(n).flags; const hold = (fl.noDecap || fl.partisans ? 12 : 4) * (n.a.dp && n.a.dp.logistics ? 2 : 1);
       if (!(c.size <= 4 || age[c.start] >= hold)) continue;
       // collect tiles + adjacent enemies
       const tiles = []; const adj = {}; let sp = 0; stack[sp++] = c.start; comp[c.start] = -2;

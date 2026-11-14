@@ -28,6 +28,7 @@
     all = {}; gen = {}; nat = {};
     for (const f of ID.FOCUS.general) { all[f.id] = f; gen[f.id] = f; f.tree = 'general'; }
     for (const f of ID.FOCUS.crisis || []) { all[f.id] = f; f.tree = 'crisis'; f.crisis = 1; }
+    for (const k in ID.FOCUS.ideos || {}) for (const f of ID.FOCUS.ideos[k]) { all[f.id] = f; f.tree = 'ideo:' + k; f.ideoTree = k; }
     for (const b in ID.FOCUS.nations) { nat[b] = {}; for (const f of ID.FOCUS.nations[b]) { all[f.id] = f; nat[b][f.id] = f; f.tree = b; } }
     for (const k in ID.FOCUS.families || {}) for (const f of ID.FOCUS.families[k]) { all[f.id] = f; f.tree = 'fam:' + k; }
   }
@@ -41,11 +42,15 @@
     const out = [];
     if (n.tree && ID.FOCUS.nations[n.tree]) out.push({ key: 'nat', name: n.adj + ' programme', list: ID.FOCUS.nations[n.tree] });
     else { const fam = ID.ideo(n).family, L = ID.FOCUS.families && ID.FOCUS.families[fam]; if (L) out.push({ key: 'nat', name: n.adj + ' programme', fam, list: L }); }
+    const IT = ID.FOCUS.ideos && ID.FOCUS.ideos[n.ideo];
+    if (IT) { if (!all) index(); out.push({ key: 'ideo', name: ID.ideo(n).name, list: IT }); }
     out.push({ key: 'gen', name: 'General programme', list: ID.FOCUS.general });
     if (ID.FOCUS.crisis) { if (!all) index(); out.push({ key: 'cri', name: 'Emergency measures', list: ID.FOCUS.crisis }); }
     return out;
   };
-  Fo.days = (G, n, f) => Math.round((f.days || 120) * (n.trans > 0 ? 1.25 : 1));
+  /* Pacing: a national programme is most of a year's work, an emergency measure a month or two. */
+  Fo.PACE = { nat: 2.5, gen: 2, rep: 1.6, crisis: 1.4 };
+  Fo.days = (G, n, f) => Math.round((f.days || 120) * (f.crisis ? Fo.PACE.crisis : f.tree === 'general' ? (f.repeat ? Fo.PACE.rep : Fo.PACE.gen) : Fo.PACE.nat) * (n.trans > 0 ? 1.25 : 1));
   Fo.current = (n) => (n.path && n.path.cur ? Fo.def(n.path.cur) : null);
   Fo.progress = (G, n) => { const p = n.path; if (!p || !p.cur) return 0; return clamp((G.tick - p.start) / Math.max(1, p.end - p.start), 0, 1); };
 
@@ -204,11 +209,11 @@
     const p = Fo.ensure(n); if (p.cur) return;
     const av = Fo.available(G, n); if (!av.length) return;
     const I = ID.ideo(n), hist = !!G.historical;
-    if (n.a.reformer == null) n.a.reformer = G.rng.chance(0.3) ? 1 : 0; // some regimes set out to transform themselves; most do not
+    if (n.a.reformer == null) n.a.reformer = G.rng.chance(0.3) || ID.leaderLean(n, 'reform') > 0 ? 1 : 0; // some regimes set out to transform themselves; most do not
     const wantArmy = n.nwars || n.a.threatened, hungry = n.foodBal < 1.02;
     const f = G.rng.weighted(av, (x) => {
-      let w = x.tree === 'general' ? 1 : x.crisis ? 5 : 3;
-      if (x.tree !== 'general' && !x.crisis && hist) w = x.hist ? 40 : 0;
+      let w = x.tree === 'general' ? 1 : x.crisis ? 5 : x.ideoTree ? 2.5 : 3;
+      if (x.tree !== 'general' && !x.crisis && !x.ideoTree && hist) w = x.hist ? 40 : G.story && G.story.loose ? 0.25 : 0;
       if (x.repeat) w *= 0.45;
       if (x.dest) w *= 3;
       if (typeof x.ai === 'function') w *= x.ai(n, G); else if (x.ai != null) w *= x.ai;
@@ -216,7 +221,7 @@
       if (fx.some((e) => e[0] === 'war')) w *= hist && x.hist ? 1 : n.nwars ? 0.1 : 0.4 + I.dip.agg;
       // a programme that changes the regime is taken mostly where the country is already drifting that way
       const io = fx.find((e) => e[0] === 'ideology' && e[1] !== n.ideo);
-      if (io) w *= hist ? (x.hist ? 1 : 0) : (n.drift[io[1]] || 0) > 10 ? 0.5 : n.a.reformer ? 0.3 : 0;
+      if (io) w *= hist ? (x.hist ? 1 : G.story && G.story.loose && (n.drift[io[1]] || 0) > 25 ? 0.2 : 0) : (n.drift[io[1]] || 0) > 10 ? 0.5 : n.a.reformer ? 0.3 : 0;
       if (fx.some((e) => e[0] === 'civilwar')) w = 0;
       if (wantArmy && /^g_(staff|forts|motor|air|rearm)/.test(x.id)) w *= 2.5;
       if (hungry && /^g_(ext|irrig|mech)/.test(x.id)) w *= 2.5;
@@ -299,7 +304,10 @@
   /* A historical declaration of war. When the aggressor is the player, it becomes a choice. */
   ID.storyWar = function (G, ab, bb, cb, why) {
     const A = ID.byBase(G, ab), Bn = ID.byBase(G, bb);
-    if (!A || !Bn || A === Bn || ID.atWar(G, A.id, Bn.id) || D().warBlock(G, A, Bn)) return false;
+    if (!A || !Bn || A === Bn || ID.atWar(G, A.id, Bn.id)) return false;
+    const wb = D().warBlock(G, A, Bn);
+    if (wb && /^Truce/.test(wb)) { ID.dipOf(G, A.id, Bn.id).truce = 0; ID.dipOf(G, A.id, Bn.id).nap = 0; A.threat += 10; } // history does not wait for a truce to expire
+    else if (wb) return false;
     if (A.civil && G.nations[A.civil] && G.nations[A.civil].alive) return false;
     if (A.id === G.player && !G.autoPlayer) { ID.Events.queue(G, A, 'story_war', { target: Bn.id, cb, why }); return true; }
     D().startWar(G, A, Bn, cb || 'claims');
@@ -415,14 +423,17 @@
   const at = (b) => (b.date[0] - ID.START_YEAR) * 360 + (b.date[1] - 1) * 30;
   St.at = at;
   St.init = function (G) {
-    G.story = { done: {} };
+    G.story = { done: {}, flags: {}, picks: {}, loose: G.story ? G.story.loose : true };
     for (const b of ID.STORY) if (at(b) < G.tick) G.story.done[b.id] = 3; // before this campaign began
   };
   St.beat = (id) => ID.STORY.find((b) => b.id === id);
   St.title = (b) => b.title || (ID.Events.def(b.id) ? ID.Events.def(b.id).title : b.id);
+  St.flag = (G, k) => !!(G.story && G.story.flags && G.story.flags[k]);
   St.month = function (G) {
     if (!G.historical) return;
     if (!G.story) St.init(G);
+    if (!G.story.flags) G.story.flags = {};
+    if (!G.story.picks) G.story.picks = {};
     for (const b of ID.STORY) {
       if (G.story.done[b.id]) continue;
       const t = at(b); if (G.tick < t) continue;
@@ -430,7 +441,8 @@
       if (G.tick - t > 120) continue; // missed (e.g. loaded long after)
       let ok = true; if (b.cond) { try { ok = !!b.cond(G); } catch (e) { ok = false; } }
       if (!ok) { G.story.done[b.id] = 2; continue; }
-      if (b.nation) { const n = ID.byBase(G, b.nation); if (n) ID.Events.queue(G, n, b.id, {}); else G.story.done[b.id] = 2; }
+      if (b.player) { const n = G.nations[G.player]; if (n && n.alive && !G.autoPlayer && !G.headless && (!b.pcond || b.pcond(G, n))) ID.Events.queue(G, n, b.id, {}); else G.story.done[b.id] = 2; }
+      else if (b.nation) { const n = ID.byBase(G, b.nation); if (n) ID.Events.queue(G, n, b.id, {}); else G.story.done[b.id] = 2; }
       else { b.run(G); if (b.sup && !G.headless) (G.superq = G.superq || []).push({ kind: 'story', id: b.id }); }
     }
   };

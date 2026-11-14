@@ -100,7 +100,7 @@
   Ev.pending = (G, id) => G.evq.some((e) => e.id === id) || (G.tray || []).some((e) => e.id === id);
   /* Ordinary dispatches wait in a tray beside the map while the game runs; urgent ones (sys, story)
      stop the clock. G.trayEvents is set by the interface from the player's settings. */
-  Ev.urgent = (def) => !!((def.sys || def.story) && def.tone !== 'good'); // good news never stops the clock
+  Ev.urgent = (def) => !!((def.sys || def.story) && def.tone !== 'good' && !def.tray); // good news and quiet consequences never stop the clock
   /* Fortune: every dispatch is 'bad' (a problem), 'good' (a windfall) or 'mixed' (a dilemma).
      Bad news raises n.a.luck, good news spends it; the monthly draw leans toward good fortune
      while luck is high and keeps problems apart (see Ev.month). Tones are set in data/fortune.js. */
@@ -127,9 +127,20 @@
   Ev.txt = (v, G, n, ctx) => (typeof v === 'function' ? v(n, G, ctx) : v).replace(/\{N\}/g, n.name).replace(/\{A\}/g, n.adj).replace(/\{L\}/g, n.leader.title + ' ' + n.leader.name).replace(/\{BODY\}/g, ID.ideo(n).control.body);
   Ev.auto = function (G, n, def, ctx) {
     const opts = Ev.options(G, n, def, ctx); if (!opts.length) return;
-    const h = G.historical && def.story ? opts.find((x) => x.hist) : null;
+    let h = G.historical && def.story ? opts.find((x) => x.hist) : null;
+    // divergent history: now and then a country takes the other road
+    if (h && G.story && G.story.loose && opts.length > 1 && !def.fixed && G.rng.chance(0.15)) h = G.rng.weighted(opts.filter((x) => x !== h && !x.noAI), (x) => (x.ai != null && typeof x.ai !== 'function' ? x.ai : 1)) || h;
     const o = h || G.rng.weighted(opts, (x) => (typeof x.ai === 'function' ? x.ai(n, G, ctx) : x.ai != null ? x.ai : 1)) || opts[0];
+    Ev.storyPick(G, n, def, o);
     Ev.applyFx(G, n, typeof o.fx === 'function' ? o.fx(n, G, ctx) : o.fx, ctx);
+  };
+  /* Story choices are remembered: o.sf sets a story flag that later beats read. */
+  Ev.storyPick = function (G, n, def, o) {
+    if (!def.story || !G.story) return;
+    if (!G.story.flags) G.story.flags = {}; if (!G.story.picks) G.story.picks = {};
+    if (o.sf) G.story.flags[o.sf] = G.tick || 1;
+    G.story.picks[def.id] = typeof o.label === 'string' ? o.label : '';
+    if (!o.hist && ID.isMajor(G, n) && n.id !== G.player) ID.news(G, 'History turns: ' + n.name + ' — ' + Ev.txt(o.label, G, n, {}) + '.', 'pol', n.id);
   };
   /* Player picks option k of the event at the head of the queue (or of tray entry idx). */
   Ev.choose = function (G, k, idx, byMinisters) {
@@ -138,6 +149,7 @@
     const opts = Ev.options(G, n, def, e.ctx); if (!opts.length) return;
     let o = opts[k] || opts[0];
     if (byMinisters) { o = G.rng.weighted(opts, (x) => (typeof x.ai === 'function' ? x.ai(n, G, e.ctx) : x.ai != null ? x.ai : 1)) || opts[0]; ID.news(G, 'Left unanswered, “' + Ev.txt(def.title, G, n, e.ctx) + '” was settled by your ministers: ' + Ev.txt(o.label, G, n, e.ctx) + '.', 'pol', n.id); }
+    Ev.storyPick(G, n, def, o);
     Ev.applyFx(G, n, typeof o.fx === 'function' ? o.fx(n, G, e.ctx) : o.fx, e.ctx);
     n.hist = n.hist || []; n.hist.push({ t: G.tick, id: e.id, title: Ev.txt(def.title, G, n, e.ctx), pick: Ev.txt(o.label, G, n, e.ctx) }); if (n.hist.length > 60) n.hist.shift();
   };

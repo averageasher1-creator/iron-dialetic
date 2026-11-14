@@ -153,7 +153,7 @@
     if (attacker && w.aim === 'limited' && s >= 0.28) return true;      // took what it came for
     if (!attacker && w.aim === 'limited' && s <= -0.12) return true;   // cut the losses
     if (months < 8) return false;
-    let v = -s * 60 + X.we * 0.9 + (months > 30 ? 15 : 0) + (X.stab < 30 ? 20 : 0) + (X.nwars > 1 ? 12 : 0) - 28;
+    let v = -s * 60 + X.we * 0.9 + (X.we > 60 ? 18 : 0) + ID.leaderLean(X, 'peace') + (Y.a.feelers && G.tick - Y.a.feelers < 360 ? 15 : 0) + (months > 30 ? 15 : 0) + (X.stab < 30 ? 20 : 0) + (X.nwars > 1 ? 12 : 0) - 28;
     if (s > 0.25 && X.troops > Y.troops * 1.3 && w.aim === 'total') v -= 30;
     return v > 0;
   };

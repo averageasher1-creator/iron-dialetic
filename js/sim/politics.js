@@ -227,7 +227,7 @@
     const Iold = ID.IDEOLOGIES[old], I = ID.IDEOLOGIES[to];
     const keepLeader = mode === 'election' ? false : mode === 'drift' || mode === 'reform';
     const leader = n.leader;
-    const oldName = n.name;
+    const oldName = n.name, why0 = mode === 'revolution' || mode === 'coup' ? P.troubleOf(G, n) : '';
     ID.applyIdeology(G, n, to, false);
     if (keepLeader) { n.leader = leader; n.leader.title = ID.leaderTitle(to); }
     for (const f of F) {
@@ -254,7 +254,7 @@
     ID.chron(G, 'ideology', oldName + ' ' + verb + ' ' + I.name + ' (' + n.name + ').', n.id);
     const HK = { revolution: 'Revolution', coup: 'Coup d’état', election: 'Election', reform: 'Reform', drift: 'A new order', imposed: 'Occupation', succession: 'Succession' };
     if (n.id === G.player) ID.headline(G, { kicker: HK[mode] || 'A new order', title: I.name, sub: oldName + ' is now ' + n.name + '. The rules have changed.', a: n.id, tone: mode === 'election' || mode === 'reform' ? 'pol' : 'rev' });
-    else if ((mode === 'revolution' || mode === 'coup') && ID.isMajor(G, n)) ID.headline(G, { kicker: HK[mode], title: n.base + ' falls', sub: oldName + ' is overthrown. ' + n.name + ' is proclaimed under ' + I.name + '.', a: n.id, tone: 'rev' });
+    else if ((mode === 'revolution' || mode === 'coup') && ID.isMajor(G, n)) { const why = why0; ID.headline(G, { kicker: HK[mode], title: n.base + ' falls', sub: oldName + ' is overthrown' + (why ? ' after ' + why : '') + '. ' + n.name + ' is proclaimed under ' + I.name + '.', a: n.id, tone: 'rev' }); }
     ID.fx(G, 'ideology', n.capital, { col: I.color });
     if (!G.headless) { G.dirtyAll = true; if (mode === 'revolution' || mode === 'coup') ID.sfx(G, 'revolt'); }
     if (mode === 'revolution' || mode === 'coup' || mode === 'election') {
@@ -267,6 +267,21 @@
     }
     for (let p = 1; p < G.provinces.length; p++) { const Pr = G.provinces[p]; if (Pr.owner === n.id) { if (Pr.opp === to) { Pr.opp = null; Pr.oppStr *= 0.2; } else Pr.oppStr *= 0.7; Pr.sponsor = 0; } }
     P.power(G, n); ID.Combat.refresh(G, n);
+  };
+
+  /* What brought a regime down, in a phrase, for the headlines. */
+  P.troubleOf = function (G, n) {
+    const L = [];
+    if (n.we > 50) L.push([n.we, n.nwars ? 'a war it could not end' : 'a war that bled it white']);
+    if (n.famine) L.push([70, 'famine']);
+    if (n.depression) L.push([55, 'the slump']);
+    if (n.lostWarAt != null && n.age - n.lostWarAt < 60) L.push([60, 'a lost war']);
+    if (n.legit < 35) L.push([70 - n.legit, 'a regime nobody believed in any more']);
+    if (n.fs.military < 30) L.push([65 - n.fs.military, 'an army that would not fight for it']);
+    if ((n.a.unrest || 0) > 40) L.push([n.a.unrest, 'years of unrest']);
+    if (n.inflation > 50) L.push([n.inflation, 'ruinous inflation']);
+    L.sort((a, b) => b[0] - a[0]);
+    return L.length ? L[0][1] : '';
   };
 
   /* ---------------------------------------------------------------- coups */
@@ -292,7 +307,7 @@
   P.movement = function (G, n) {
     const share = {}; let best = null, bs = 0;
     for (let p = 1; p < G.provinces.length; p++) {
-      const Pr = G.provinces[p]; if (Pr.owner !== n.id || !Pr.opp || Pr.oppStr < 60) continue;
+      const Pr = G.provinces[p]; if (Pr.owner !== n.id || !Pr.opp || Pr.opp === n.ideo || Pr.oppStr < 60) continue;
       share[Pr.opp] = (share[Pr.opp] || 0) + (Pr.cnt[n.id] || 0);
     }
     for (const k in share) { const s = share[k] / Math.max(1, n.tiles); if (s > bs) { bs = s; best = k; } }
@@ -312,7 +327,9 @@
       if (n.id === G.player) { ID.Game.defeat(G, 'revolution', { ideo, share }); return; }
       P.changeIdeology(G, n, ideo, 'revolution', sponsor); return;
     }
-    if (share < 0.1 || G.nations.length >= MAXN - 2) { // too weak: crushed
+    const loyal = n.fs.military >= 50 && n.fp.military >= 9 && share < 0.42 && !ID.ideo(n).flags.noCoup;
+    if (share < 0.1 || G.nations.length >= MAXN - 2 || (loyal && G.rng.chance(0.65))) { // too weak, or the army stands firm: crushed
+      if (loyal && share >= 0.1) { n.grievance = c100(n.grievance + 15); n.sm.intelligentsia -= 6; n.sm.workers -= 4; ID.logGrief(n, G.tick, 'The army crushed a rising for ' + I.name + '.'); ID.chron(G, 'rising', 'A rising for ' + I.name + ' in ' + n.name + ' is crushed by the army.', n.id); }
       for (const p of provs) { G.provinces[p].oppStr *= 0.4; G.provinces[p].unrest = c100(G.provinces[p].unrest + 15); }
       n.stab -= 4; ID.news(G, 'A rising for ' + I.name + ' in ' + n.name + ' is put down.', 'pol', n.id); return;
     }
@@ -355,7 +372,7 @@
     for (let p = 1; p < G.provinces.length; p++) { const Pr = G.provinces[p]; if (Pr.owner === n.id) Pr.oppStr *= 0.5; }
     ID.news(G, 'CIVIL WAR in ' + n.name + ': ' + R.name + ' is proclaimed and holds ' + Math.round(share * 100) + '% of the country.', 'rev', n.id, R.id);
     ID.chron(G, 'civilwar', 'Civil war splits ' + n.name + '. The rebels proclaim ' + R.name + '.', n.id, R.id);
-    if (n.id === G.player || ID.isMajor(G, n)) ID.headline(G, { kicker: 'Civil war', title: n.base + ' divided', sub: R.name + ' is proclaimed and holds ' + Math.round(share * 100) + '% of the country.', a: n.id, b: R.id, tone: 'rev' });
+    if (n.id === G.player || ID.isMajor(G, n)) { const why = P.troubleOf(G, n); ID.headline(G, { kicker: 'Civil war', title: n.base + ' divided', sub: (why && n.id !== G.player ? 'After ' + why + ', ' : '') + R.name + ' is proclaimed and holds ' + Math.round(share * 100) + '% of the country.', a: n.id, b: R.id, tone: 'rev' }); }
     for (const p of provs) ID.fx(G, 'revolt', G.provinces[p].center, { col: I.color });
     ID.sfx(G, 'revolt');
     if (!G.headless) G.dirtyAll = true;
@@ -466,10 +483,11 @@
       if (I.flags.garrison) u -= Math.min(12, (n.troops / Math.max(1, n.tiles)) * 22);
       if (!isCore && Pr.core) {
         const cn = G.nations[Pr.core];
-        if (cn && ID.ideo(cn).flags.partisans && (!cn.alive || ID.atWar(G, cn.id, n.id))) { u += 28; n.troops *= 0.9985; n.casM += n.troops * 0.0015; }
+        if (cn && (ID.ideo(cn).flags.partisans || (cn.a.dp && cn.a.dp.bleed > 1)) && (!cn.alive || ID.atWar(G, cn.id, n.id))) { const bl = 0.0015 * (cn.a.dp ? Math.max(1, cn.a.dp.bleed) : 1); u += 28; n.troops *= 1 - bl; n.casM += n.troops * bl; }
       }
       Pr.unrest += (c100(u) - Pr.unrest) * 0.15;
       // opposition movement
+      if (Pr.opp === n.ideo) { Pr.opp = null; Pr.oppStr *= 0.3; }
       if (!Pr.opp || Pr.oppStr < 6) { if ((p + G.tick / 30) % 4 < 1 || !Pr.opp) { Pr.opp = P.pickOpp(G, n, Pr); Pr.opp = Pr.opp ? Pr.opp.id : null; Pr.sponsor = 0; } }
       if (Pr.opp) {
         const cs = classSupport(n, Pr.opp, Pr.urban);
@@ -478,14 +496,14 @@
         for (const w of waves) {
           if (w.fam !== fam || w.src === n.id) continue;
           const d = Math.hypot(Pr.cx - w.x, Pr.cy - w.y), rad = 50 + w.m * 9;
-          if (d < rad) g += 1.6 * w.str * (1 - w.m / 24) * (press.infl > 0 ? 1 + press.infl : 1 + press.infl * 0.8);
+          if (d < rad) g += 1.15 * w.str * (1 - w.m / 24) * (press.infl > 0 ? 1 + press.infl : 1 + press.infl * 0.8);
         }
         if (g > 0 && !n.ai) g *= diffP.crisis;
         Pr.oppStr = c100(Pr.oppStr + g);
       }
       n.a.uSum += Pr.unrest * tiles; n.a.uT += tiles; n.a.oSum += Pr.oppStr * tiles;
       // secession of unintegrated land
-      if (!isCore && Pr.unrest > 72 && Pr.integ < 55 && tiles > 20 && G.rng.chance(0.02 * (n.ai ? 1 : diffP.crisis)) && !(n.civil && G.nations[n.civil].alive) && !(n.civilOf && G.nations[n.civilOf] && G.nations[n.civilOf].alive)) P.secede(G, n, Pr);
+      if (!isCore && Pr.unrest > 77 && Pr.integ < 50 && tiles > 20 && G.rng.chance(0.01 * (n.ai ? 1 : diffP.crisis)) && !(n.civil && G.nations[n.civil].alive) && !(n.civilOf && G.nations[n.civilOf] && G.nations[n.civilOf].alive)) P.secede(G, n, Pr);
     }
     for (const n of G.nations) if (n && n.alive) { n.a.unrest = n.a.uT ? n.a.uSum / n.a.uT : 0; n.a.opp = n.a.uT ? n.a.oSum / n.a.uT : 0; n.a.noncoreShare = n.a.uT ? n.a.noncore / n.a.uT : 0; }
     for (let k = waves.length - 1; k >= 0; k--) if (++waves[k].m > 24) waves.splice(k, 1);
@@ -519,9 +537,10 @@
       if (I.legit.charisma) n.charisma = c100(n.charisma + (n.glory - 40) * 0.01 - (n.leader.age > 66 ? 0.12 : 0) - (n.crises > 1 ? 0.2 : 0) + (55 - n.charisma) * 0.01);
     } else if (G.tick % 360 < 30) n.leader.age++;
     // war exhaustion
-    const wem = (rec.weMult || 1) * (ID.LAWS.mobil.opts[n.laws.mobil].we || 1) * (I.flags.partisans ? 0.7 : 1);
-    n.we = c100(n.we + (n.casM / Math.max(1, n.pop)) * 900 * wem + (n.nwars ? 0.4 * wem : -1.2));
+    const wem = (rec.weMult || 1) * (ID.LAWS.mobil.opts[n.laws.mobil].we || 1) * (I.flags.partisans ? 0.7 : 1) * (n.a.dp ? n.a.dp.wePace : 1) * Math.max(0.3, 1 + ID.mod(n, 'wePace'));
+    n.we = c100(n.we + (n.casM / Math.max(1, n.pop)) * 900 * wem + (n.nwars ? 0.4 * wem : -2));
     n.casM = 0;
+    if (n.id === G.player && !G.autoPlayer && n.nwars && n.we > 55 && (!n.a.wearyAt || G.tick - n.a.wearyAt > 1080)) { n.a.wearyAt = G.tick; ID.Events.queue(G, n, 'arc_weary', {}); }
     // hidden grievance
     const secNeed = sec.repress > 0.5 ? 0.08 : 0;
     n.grievance = c100(n.grievance + (press.grievance || 0) + sec.grievance + (n.emergency ? 0.4 : 0) - (n.laws.security === 'liberties' && n.laws.press === 'free' ? 0.3 : 0));
@@ -532,7 +551,7 @@
     P.legitimacy(G, n);
     n.legit += (n.legitRaw - n.legit) * 0.25;
     P.stability(G, n);
-    n.auth = Math.min(I.control.type === 'assembly' ? 70 : 100, n.auth + I.control.auth * (0.55 + n.legit / 110) * (n.emergency ? 1.4 : 1));
+    n.auth = clamp(n.auth + I.control.auth * (0.55 + n.legit / 110) * (n.emergency ? 1.4 : 1) + ID.mod(n, 'auth'), 0, I.control.type === 'assembly' ? 70 : 100);
     ID.Combat.refresh(G, n);
 
     // isolation (for permanent revolution)
@@ -542,9 +561,11 @@
     n.a.driftRate = {};
     for (const d of I.drift) {
       let p = d.pressure(n, G); if (p > 0 && !n.ai) p *= diffP.crisis; if (p > 0 && n.ai) p *= 0.75;
+      if (p > 0) p *= Math.max(0.2, 1 + ID.mod(n, 'driftK'));
       p += ID.mod(n, 'drift_' + d.to);
       n.a.driftRate[d.to] = p;
       n.drift[d.to] = c100((n.drift[d.to] || 0) + p);
+      if (n.id === G.player && !G.autoPlayer && n.drift[d.to] >= 70 && p > 0) { const da = n.a.driftArc || (n.a.driftArc = {}); if (!da[d.to] || G.tick - da[d.to] > 1440) { da[d.to] = G.tick; ID.Events.queue(G, n, 'arc_drift', { to: d.to, label: d.label, why: d.why }); } }
       if (n.drift[d.to] >= 100 && !n.trans) {
         if (n.id === G.player) { if (!ID.Events.pending(G, 'drift')) ID.Events.queue(G, n, 'drift', { to: d.to, label: d.label, why: d.why }); }
         else if (rng.chance(0.6)) { P.changeIdeology(G, n, d.to, 'drift'); return; }
@@ -576,9 +597,11 @@
       risk *= n.ai ? 0.8 : diffP.crisis;
       if (n.a.coupAt != null && G.tick - n.a.coupAt < 720) risk *= 0.2;
       if (n.age < 18) risk *= 0.3;
+      risk *= Math.max(0.15, 1 + ID.mod(n, 'coup'));
     }
     n.coupRisk = risk;
-    if (risk > 0.004 && rng.chance(risk)) {
+    if (n.id === G.player && !G.autoPlayer && risk > 0.008 && (!n.a.coupArc || G.tick - n.a.coupArc > 900) && !ID.Events.pending(G, 'arc_coup')) { n.a.coupArc = G.tick; ID.Events.queue(G, n, 'arc_coup', {}); }
+    if (risk > 0.004 && rng.chance(risk) && !(n.id === G.player && n.a.coupArc && G.tick - n.a.coupArc < 60)) {
       if (rng.chance(sec.detect * clamp(n.budget.security / 0.08, 0.3, 1.2))) {
         n.a.coupAt = G.tick;
         if (n.id === G.player) ID.Events.queue(G, n, 'plot_uncovered'); else { n.sm.military += 6; n.stab -= 2; }
@@ -586,12 +609,18 @@
     }
 
     /* uprising */
-    if (!(n.civil && G.nations[n.civil] && G.nations[n.civil].alive) && !(n.civilOf && G.nations[n.civilOf] && G.nations[n.civilOf].alive) && n.age > 6 && !(n.a.civilEnd && G.tick - n.a.civilEnd < 1800)) {
+    if (!(n.civil && G.nations[n.civil] && G.nations[n.civil].alive) && !(n.civilOf && G.nations[n.civilOf] && G.nations[n.civilOf].alive) && n.age > 24 && !(n.a.civilEnd && G.tick - n.a.civilEnd < 2160)) {
       const mv = P.movement(G, n); n.a.mv = mv;
-      if (mv.ideo && mv.share >= 0.22 && n.stab < 38) {
+      if (mv.ideo && mv.share >= 0.25 && n.stab < 33) {
         const channel = I.elections && !n.emergency && ELECTORAL[mv.ideo] && n.laws.press !== 'censored';
-        if (!channel && rng.chance(0.04 + (38 - n.stab) / 200)) { P.uprising(G, n, mv.ideo); if (!n.alive || G.over) return; }
-      }
+        // the fuse: a movement must be ready for months before it rises (ID.Arcs tells the story of it)
+        n.a.fuse = (n.a.fuse || 0) + 1;
+        if (n.id === G.player && !G.autoPlayer) {
+          if (n.a.fuse === 1 && !ID.Events.pending(G, 'arc_rev1')) ID.Events.queue(G, n, 'arc_rev1', { ideo: mv.ideo, share: mv.share });
+          else if (n.a.fuse === 4 && !ID.Events.pending(G, 'arc_rev2')) ID.Events.queue(G, n, 'arc_rev2', { ideo: mv.ideo, share: mv.share });
+        } else if (n.a.fuse === 3 && ID.isMajor(G, n)) ID.news(G, 'Revolutionary committees are forming in ' + n.name + ': the ' + ID.IDEOLOGIES[mv.ideo].name + ' movement holds ' + Math.round(mv.share * 100) + '% of the country.', 'pol', n.id);
+        if (!channel && n.a.fuse >= 6 && rng.chance(0.022 + (33 - n.stab) / 280)) { P.uprising(G, n, mv.ideo); if (!n.alive || G.over) return; }
+      } else n.a.fuse = Math.max(0, (n.a.fuse || 0) - 1);
     }
 
     /* disintegration */
@@ -616,10 +645,12 @@
     }
 
     /* succession */
+    const ailing = n.leader.traits && n.leader.traits.indexOf('ailing') >= 0 ? 2 : 1;
+    if (I.flags.succession && n.id === G.player && !G.autoPlayer && n.leader.age >= 66 && !n.flags.heir && n.a.heirAsked !== n.leader.name) { n.a.heirAsked = n.leader.name; ID.Events.queue(G, n, 'arc_heir', {}); }
     if (I.flags.succession || I.flags.softSuccession) {
       const age = n.leader.age;
-      if (age > 58 && rng.chance((age - 58) * 0.0012)) P.succession(G, n);
-    }
+      if (age > 58 && rng.chance((age - 58) * 0.0012 * ailing)) P.succession(G, n);
+    } else if (n.leader.age > 60 && rng.chance((n.leader.age - 60) * 0.0012 * ailing)) P.newLeader(G, n, n.leader.age > 71 || ailing > 1 ? 'dies' : 'retires');
 
     /* threshold notes for the post-mortem */
     for (const f of F) {
@@ -658,6 +689,7 @@
     const g = P.electionForecast(G, n) + G.rng.range(-0.03, 0.03);
     if (g >= 0.5) {
       n.mandate = c100(52 + (g - 0.5) * 160); n.cnt.elections = (n.cnt.elections || 0) + 1;
+      if (G.rng.chance(0.3)) P.newLeader(G, n, 'retires'); // the party changes its leader between elections
       ID.news(G, 'Elections in ' + n.name + ': the government is returned with ' + Math.round(g * 100) + '%.', 'pol', n.id);
       if (n.id === G.player) ID.sfx(G, 'good');
     } else {
@@ -667,6 +699,18 @@
       else if (G.rng.chance(0.12) && n.fs.military > 55) { n.emergency = true; n.flags.everEmergency = 1; n.mandate = 10; n.stab -= 10; ID.news(G, 'The government of ' + n.name + ' annuls its election defeat.', 'bad', n.id); }
       else P.changeIdeology(G, n, opp, 'election');
     }
+  };
+
+  /* A new leader without a change of system: death or retirement in a party, a junta, an assembly or a parliament. */
+  P.newLeader = function (G, n, how) {
+    const I = ID.ideo(n), old = n.leader;
+    n.leader = ID.genLeader(G.rng, n.ideo); n.leader.age = G.rng.int(44, 60);
+    const traits = (n.leader.traits || []).map((t) => ID.TRAITS[t].name.toLowerCase()).join(', ');
+    const verb = how === 'dies' ? 'is dead' : how === 'ousted' ? 'is ousted' : 'retires';
+    if (I.control.type === 'party' || I.control.type === 'decree') { n.stab -= 4; n.sm.bureaucracy -= 3; }
+    ID.chron(G, 'succession', old.title + ' ' + old.name + ' of ' + n.name + ' ' + verb + '. ' + n.leader.name + ' takes over.', n.id);
+    if (n.id === G.player) { ID.news(G, old.title + ' ' + old.name + ' ' + verb + '. ' + n.leader.name + ' succeeds' + (traits ? ' (' + traits + ')' : '') + '.', 'pol', n.id); ID.headline(G, { kicker: how === 'dies' ? 'A state funeral' : 'A new leader', title: n.leader.name, sub: old.name + ' ' + verb + '. The new ' + n.leader.title.toLowerCase() + ' is ' + (traits || 'an unknown quantity') + '.', a: n.id, tone: 'pol' }); }
+    else if (ID.isMajor(G, n)) ID.news(G, old.title + ' ' + old.name + ' of ' + n.name + ' ' + verb + '; ' + n.leader.name + ' takes over.', 'pol', n.id);
   };
 
   P.succession = function (G, n) {

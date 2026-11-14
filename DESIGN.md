@@ -102,6 +102,23 @@ dispatches no longer stop the clock; crises and history still do. Absolute monar
 dictatorships render their own cult: the screen itself is propaganda, and at the height of it the
 numbers lie.
 
+### Doctrines: making each system fundamentally different (added in session 7)
+Ideologies used to differ mostly in multipliers. Now each has a doctrine: a signature gauge that
+follows the logic of that system (a party's unity, a council republic's vitality, a movement's
+enthusiasm, a merchant republic's credit), actions that only that system can take, a war trait
+that changes how it fights rather than how hard (commissars hold when outnumbered, a people's war
+bleeds occupiers, a lightning war is fast and brittle, a liberal democracy fights with its
+factories and tires of casualties), and an order on the war bar. Every gauge drifts back toward
+the middle, so the player keeps managing it; an ideology's own programme can master the doctrine.
+Leaders carry traits that tilt their country and, for the AI, its appetite for war and peace.
+
+### Branching history and arcs (added in session 7)
+Turning points set story flags that later beats read, so a choice in 1917 or 1925 decides which
+chapters arrive in 1921, 1934 or 1953. In divergent history the AI also leaves the script now and
+then, and only takes a regime-changing branch when its politics already lean that way. Collapses
+are preceded by arcs: the committees form, the general strike is called, the officers talk, the
+letters from the front turn bitter. Each stage offers a way to change the outcome.
+
 ### Combat in five sentences
 Troops are a share of your population set by the mobilisation slider; soldiers are not
 workers. To attack, pick a neighbour you are at war with, set the commit slider, choose a
@@ -222,9 +239,10 @@ js/core/util.js       RNG, noise, heap, formatting, calendar
 js/data/*.js          base (terrain, laws, buildings...), ideologies, names + scenario, events + decisions, fortune
                       (tone of each dispatch, good-news dispatches),
                       focus (programme trees and the historical storyline), destiny (identity, destinies,
-                      family trees), expand (emergency measures, home-front branches)
+                      family trees), story2 (branching beats), arcs (warning chains), expand (emergency
+                      measures, home-front branches), doctrine (doctrines, leader traits), ideotrees
 js/sim/*.js           mapgen, world, combat, economy, politics, diplomacy, events, focus (programmes and
-                      storyline engine), ai, game (loop, victory, saves)
+                      storyline engine), doctrine (gauges, actions, war traits and orders), ai, game
 js/ui/render.js       canvas map: 1px-per-tile offscreen image, dirty-tile repaint, vector overlays
 js/ui/audio.js        synthesised sound cues and the generative score (ID.Music)
 js/ui/flags.js        procedural flags, ideology emblems, dispatch poster banners
@@ -232,6 +250,7 @@ js/ui/ui.js           top band, rail, selection card, attack bar, alerts, offers
 js/ui/panels.js       State, Economy, Laws, War, Foreign, World, Handbook
 js/ui/programme.js    Programme panel, the programme tree, history timeline, handbook page
 js/ui/advice.js       the ministers' Report: ranked problems, causes and one-click levers
+js/ui/doctrine.js     doctrine card, leader traits, the doctrine at war, Doctrines handbook page
 js/ui/nation.js       Nation screen and superevents; scenes.js paints their scenes
 js/ui/tray.js         dispatch tray (ordinary dispatches wait while the clock runs)
 js/ui/madness.js      screen effects for absolute monarchs and personal dictators

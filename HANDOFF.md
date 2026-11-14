@@ -359,9 +359,66 @@ windfalls, up to 5 problems in one year.
 - Result for Karsova over 30 years: about 26 problems, 21 good, 8 mixed; other countries similar.
   AI-played historical soak: 5 wins, 4 survive, 8 fall.
 
+## Session 7: doctrines, leaders, ideology programmes, divergent history, arcs
+
+Feedback: it felt like early beta; programmes finished very fast; everyone kept collapsing; after
+a few campaigns the other countries were predictable; ideologies should change combat and
+politics fundamentally (enhance each one rather than add more); not enough levers to balance the
+country; the storyline should branch more and react to choices; more narrative, fewer random blows.
+
+- **Pacing** (`sim/focus.js` `Fo.PACE`): national and ideology programmes ×2.5, general ×2,
+  repeatable ×1.6, emergency ×1.4. A national programme is now about 300 days.
+- **Collapse rate** (historical mode, `/tmp/diag/collapse.js hist 6`): civil wars per run 12 → ~4.5,
+  revolutions 6 → ~2, secessions 6.5 → ~4. Changes in `sim/politics.js`: movements of the regime's
+  own ideology are cleared (fixed regimes "revolting" into themselves); uprisings need stability
+  below 33 for six months (`n.a.fuse`), new regimes get two years' grace, a loyal army (military
+  support ≥ 50) crushes minority risings 65% of the time; revolutionary waves weaker; secession
+  rarer; war weariness falls faster in peace and tired states seek peace sooner (`diplomacy.js`).
+- **Doctrines** (`data/doctrine.js`, engine `sim/doctrine.js`): for each of the 22 ideologies a
+  signature gauge `n.sig` (own monthly drift plus pull to 50; effects through `n.sigm`, read by
+  `ID.mod`, which now also adds `n.sigm`), 3–5 actions, 68 in all (`Dc.run`, AI `Dc.aiMonth`), a war trait
+  (`dp`, applied in `Combat.refresh` and `processAttack`: holdFast, moraleFloor, homeDef, cityDef,
+  capitalDef, roughLoss/roughDef, speed, aloss, blitz, brittle, liberate, materiel, precision,
+  logistics, wePace, equipRegen, bleed, martyr, leaderAtk, atkMul) and a war order registered into
+  `Combat.ABIL` with `ideos`/`doctrine`/`run` (self or targeted; range 999 = any enemy). New mod
+  channels: `auth`, `coup`, `driftK`, `wePace`, `speed`, `aloss`, `cityDef`, `lure`. The absolute
+  monarchy's court favourite lives in `n.sigx.fav`. Emergency drafts never exceed 130% of the
+  mobilisation ceiling. Mastery: `['master']` sets `n.flags['dcm_' + ideo]` (benefits ×1.25, war
+  advantages a third stronger, order cooldown ×0.7).
+- **Leader traits** (`ID.TRAITS`, `ID.rollTraits` in `data/doctrine.js`; `ID.genLeader` rolls them):
+  20 traits with fx (same channels) and AI leanings (`ID.leaderLean(n, 'agg'|'peace'|'reform'|'purge')`,
+  used in AI war choice, peace, reform programmes, purges). Leaders of non-dynastic systems now
+  retire or die (`P.newLeader`), and parties change leaders between elections.
+- **Ideology programmes** (`data/ideotrees.js`, `ID.FOCUS.ideos`, tree key `ideo`, `f.ideoTree`):
+  7 programmes per ideology (154): root, a choice of two, second steps, a capstone that masters
+  the doctrine, and a post-war programme. AI weight 2.5, historical mode included.
+- **Branching history** (`data/story2.js`): story options carry `sf` flags (`G.story.flags`,
+  `ID.Story.flag`), choices recorded in `G.story.picks` (`Ev.storyPick`). 24 new beats: Aurelia
+  (white crown, white generals, Kronstadt, famine), Karsova (red march, Kirov, pact of the wolves,
+  the first weeks of Thunder, the Leader's death), Cassine (League, infamy, reconstruction, red scare,
+  civil rights), Hesperia (Grand Council), Verano (May Days), Suyan (great leap, cultural revolution),
+  Antara (1970 election), world (red decade, axis, satellite), and two player-only beats
+  (`player: 1`, `pcond`): volunteers for Verano and the lakeside conference. A third road in
+  February (a constitution). `st_second_war` depends on isolation and guarantees. `ID.storyWar`
+  now breaks truces. **Divergent** history (`G.story.loose`, default; setup: As it happened /
+  Divergent / Free): AI countries take a non-historical option at a turning point 15% of the time
+  and may take non-historical programme branches, regime-changing ones only when drifting that way.
+- **Arcs** (`data/arcs.js`, queued from `sim/politics.js` for the player): `arc_rev1` (the first
+  month a rising is brewing) and `arc_rev2` (the fourth), `arc_coup` (coup risk above 0.008),
+  `arc_heir` (dynastic ruler at 66 without an heir), `arc_weary` (war weariness 55; peace feelers
+  set `n.a.feelers`, which makes enemies readier to settle) and `arc_promise`, `arc_drift` (a drift
+  reaching 70). `def.tray` keeps a sys event out of the clock-stopping queue. Headlines for coups,
+  revolutions and civil wars of major powers give a cause (`P.troubleOf`).
+- **UI** (`ui/doctrine.js`): leader line and doctrine card on the State panel, the doctrine at war
+  on the War panel, doctrine orders on the war bar and the selection card, a Doctrines handbook
+  page, trait tags on the Nation screen; the Report flags a failing doctrine gauge.
+- Tests: `/home/claude/scripts/doctrine.js` (WHO=…), `branch.js`, `report_all.js`, `hist.js`
+  (updated for the three-way history setting), `flows.js`, `perf.js`; `/tmp/diag/doc.js`,
+  `docpush.js` (gauge equilibria), `collapse.js`, `lowstab.js`, `east.js`, `hes.js`, `reform.js`.
+
 ## Published (end of session 2)
 
-- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `1794623161-24eb` after session 6,
+- Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `LIVEVER` after session 7,
   published from files (index.html, css, js, fonts). To update after edits, republish with
   `publish_files` using the slug and the live version from `get_artifact`.
 - GitHub Pages zip: `/home/claude/iron-dialectic.zip` (rebuild with the zip command in the session log:

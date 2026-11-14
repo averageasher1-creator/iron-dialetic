@@ -46,18 +46,30 @@ machine, change it in **Settings**.
   workers' councils, corporatist pact, agrarian rent, commercial, cybernetic), decision-making
   rules, recruitment laws, attack doctrine, legitimacy sources, drift paths and grand objective.
   Sectarian rivals inside a family treat each other as enemies.
+- **Doctrines**: every system plays differently. Each has its own gauge with its own logic (party
+  unity, revolutionary momentum, council vitality, royal will, zeal, credit, national enthusiasm and
+  so on), actions only it can take, a way of fighting (commissars, people's war, lightning war,
+  martyrs, material superiority, network logistics...) and a war order of its own (deep operation,
+  a general strike across the border, lure them in deep, letters of marque...).
+- **Leaders with traits**: warlords, reformers, paranoiacs, orators, grey administrators. Every new
+  leader rolls new ones, and they change how the country behaves, so no two campaigns run the same.
 - **Seven factions** with power drawn from the country's structure and support driven by
   visible, itemised demands. Censorship makes the numbers you see lie.
 - **Regime change**: elections, coups, uprisings, reforms, drift and imposed regimes. Civil
   wars split the map along the provinces where the rebels are strong, and you choose a side.
 - **Historical mode** on *The Two Continents*: a storyline runs from 1910 to 1976 (a great war,
   revolutions, the Slump of October 1929, a second war, the blocs, a crisis over the straits).
-  Other countries follow the paths they took in history. When history reaches your country you
-  choose, and the option history took is marked. Turn it off for a world with no script.
-- **Programmes**: every state works through long projects that pay out when they finish. Each of
-  the 17 countries of *The Two Continents* has its own branching tree, with paths that rule each
-  other out, change the system of government or start wars; every state shares a general tree
-  for industry, farming, the army, the state and foreign policy.
+  When history reaches your country you choose, and the option history took is marked. Your choices
+  open new chapters: a crown that survives 1917, a party that crushes its sailors, a Senate that
+  refuses the League. In **Divergent** history (the default) other countries sometimes take the
+  other road too; set it to *As it happened* for the script, or *Free* for no script at all.
+- **Warnings before the blow**: risings, coups, successions, weary armies and regimes sliding into
+  another system all announce themselves first, with a choice at each stage.
+- **Programmes**: every state works through long projects, most of a year each, that pay out when
+  they finish. Each of the 17 countries of *The Two Continents* has its own branching tree, with
+  paths that rule each other out, change the system of government or start wars; every system of
+  government has a programme of its own that can master its doctrine; and every state shares a
+  general tree for industry, farming, the army, the state and foreign policy.
 - **The ministers' report**: when the state starts to crumble, open the Report (`R`). It names
   each problem, what is causing it, and the levers that answer it, one click away.
 - **Emergency measures**: a tree of short measures that open only in trouble (hunger, an empty
@@ -86,7 +98,7 @@ machine, change it in **Settings**.
 - **Flags** for every state, generated from its name and ideology, that change when the regime does.
 - **A living world**: blocs, coalitions against the leader, foreign-funded movements, general
   strikes called from abroad, revolutionary waves, a Great Slump, four eras.
-- **98 events and 47 decisions**, many with delayed consequences. Bad news and good news are
+- **139 events, 47 decisions, 68 doctrine actions and 552 programmes**, many with delayed consequences. Bad news and good news are
   balanced: after a run of trouble the dice lean toward a windfall, and problems arrive spaced out.
 - **A post-mortem when you fall** naming the faction that turned, what turned it, the last
   years of warnings and what to try next. A chronicle when the campaign ends.

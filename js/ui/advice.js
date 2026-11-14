@@ -19,7 +19,7 @@
     const why = ID.Focus.block(G, n, f);
     if (why && /^Only/.test(why)) return null; // not this kind of trouble
     const cur = ID.Focus.current(n);
-    return { label: f.name, act: 'startFocus', arg: id, cls: 'em', off: why, tip: '<h5>Emergency measure: ' + esc(f.name) + '</h5>' + esc(f.desc) + '<hr>' + f.days + ' days. ' + UI.fxHtml(f.fx, n).replace(/<\/span>/g, '</span> ') + (cur && !cur.crisis ? '<hr>' + esc(ID.Focus.nm(cur, n)) + ' is shelved, progress kept, until it is done.' : '') };
+    return { label: f.name, act: 'startFocus', arg: id, cls: 'em', off: why, tip: '<h5>Emergency measure: ' + esc(f.name) + '</h5>' + esc(f.desc) + '<hr>' + ID.Focus.days(G, n, f) + ' days. ' + UI.fxHtml(f.fx, n).replace(/<\/span>/g, '</span> ') + (cur && !cur.crisis ? '<hr>' + esc(ID.Focus.nm(cur, n)) + ' is shelved, progress kept, until it is done.' : '') };
   };
   const go = (label, tab) => ({ label, act: 'tab', arg: tab, cls: 'ghost' });
   const pct = (v) => Math.round(v * 100) + '%';
@@ -167,6 +167,13 @@
 
     if (n.strike > 0) add(55, 'Strike', 'Industry is down 30% while it lasts.', [dec(G, n, 'conc_workers')]);
     if (n.load > 1) add(58, 'The planning network is overloaded', 'Plans outrun the means to compute them; efficiency suffers.', [dec(G, n, 'expand_network'), go('Economy', 'eco')]);
+
+    /* the doctrine's own gauge */
+    const DD = ID.Doctrine && ID.Doctrine.ensure(G, n);
+    if (DD && n.sig < 32) {
+      const ups = DD.acts.filter((a) => (a.sig || 0) > 0).sort((a, b) => b.sig - a.sig).slice(0, 3);
+      add(n.sig < 18 ? 68 : 52, esc(DD.gauge) + ' ' + Math.round(n.sig), esc(DD.name) + ' is failing. ' + esc(DD.low), ups.map((a) => ({ label: a.name, act: 'doctrine', arg: a.id, off: ID.Doctrine.actBlock(G, n, a), tip: '<h5>' + esc(a.name) + '</h5>' + esc(a.desc) + '<hr>' + esc(DD.gauge) + ' +' + a.sig })));
+    }
 
     /* the quieter matters */
     if (!(n.path && n.path.cur) && ID.Focus.available(G, n).length) add(40, 'No programme under way', 'Every month without one is wasted.', [{ label: 'Open the tree', act: 'tree', arg: 'nat' }, go('Programme', 'prog')]);
