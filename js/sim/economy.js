@@ -58,7 +58,7 @@
       n.cnt.plans = (n.cnt.plans || 0) + 1; n.discipline = Math.min(100, n.discipline + 12); n.fervor = Math.min(100, n.fervor + 10);
       ID.addMod(n, 'legit', 6, 24, 'Plan fulfilled');
       ID.news(G, n.name + ' announces its Five-Year Plan fulfilled (' + Math.round(ratio * 100) + '% of target).', 'eco', n.id);
-      if (n.id === G.player) ID.sfx(G, 'good');
+      if (n.id === G.player) { n.a.planRatio = ratio; ID.Events.queue(G, n, 'plan_fulfilled'); }
     } else if (n.id === G.player) {
       n.a.planRatio = ratio; ID.Events.queue(G, n, 'plan_failed');
     } else {

@@ -28,8 +28,9 @@
       const idx = G.tray.indexOf(e), n = G.nations[e.n], def = ID.Events.def(e.id), opts = ID.Events.options(G, n, def, e.ctx);
       const Tx = (v) => esc(ID.Events.txt(v, G, n, e.ctx));
       const left = Math.max(0, 90 - (G.tick - e.t)), open = UI.trayOpen === keyOf(e), slim = i > 0 && !open; // only the newest shows its choices
-      h += '<div class="tcard' + (open ? ' open' : '') + (slim ? ' slim' : '') + '">' +
-        '<div class="th"><span class="k">Dispatch</span><b>' + Tx(def.title) + '</b><button class="rd" data-act="trayOpen" data-a=\'"' + keyOf(e) + '"\'' + tip(open ? 'Fold the dispatch' : 'Read the dispatch') + '>' + (open ? '–' : 'Read') + '</button></div>' +
+      const good = def.tone === 'good';
+      h += '<div class="tcard' + (open ? ' open' : '') + (slim ? ' slim' : '') + (good ? ' good' : '') + '">' +
+        '<div class="th"><span class="k">' + (good ? 'Good news' : 'Dispatch') + '</span><b>' + Tx(def.title) + '</b><button class="rd" data-act="trayOpen" data-a=\'"' + keyOf(e) + '"\'' + tip(open ? 'Fold the dispatch' : 'Read the dispatch') + '>' + (open ? '–' : 'Read') + '</button></div>' +
         (open ? '<p class="tt">' + Tx(def.text) + '</p>' : '') +
         (slim ? '' : '<div class="to">' + opts.map((o, k) => {
           const fx = typeof o.fx === 'function' ? [] : o.fx;

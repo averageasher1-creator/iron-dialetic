@@ -467,6 +467,7 @@ ul.plus li::marker { content: "+  "; color: var(--olive); font-weight: 700; } ul
 .tcard .tl { height: 4px; background: var(--paper3); }
 .tcard .tl i { display: block; height: 100%; background: var(--red); transition: width 0.5s linear; }
 .tcard.slim { box-shadow: 3px 3px 0 var(--ink); } .tcard.slim .th b { font-size: 14px; }
+.tcard.good .th .k { background: var(--olive); } .tcard.good .tl i { background: var(--olive); }
 .tmore { align-self: flex-start; font: 700 13px var(--cond); background: var(--ink); color: var(--paper); padding: 3px 9px; }
 
 /* headlines no longer block the map: smaller, shorter, and clicks pass through */

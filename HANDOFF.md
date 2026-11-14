@@ -338,6 +338,27 @@ dictators should "go crazy with pop ups, distortions and visuals", and the UI bl
   errors), `mad.js` (WHO=Pavon), `flows.js`, `hist.js`; `/tmp/diag/cri.js` (shelving).
   AI-played historical soak after these changes: 1 win, 7 survive, 9 fall.
 
+### Session 6, later: fortune (fewer runs of bad news)
+
+The user found the dispatches "just spam unfortunate events", Karsova worst. Measured with
+`/tmp/diag/evspam.js Karsova hist 30 4 auto`: about 41 problem dispatches in 30 years against 10
+windfalls, up to 5 problems in one year.
+
+- **`js/data/fortune.js`** (loads after `data/events.js`): `tone` for every dispatch ('bad',
+  'good', 'mixed'; untagged sys events count as bad, story beats as mixed), damped weights for the
+  busiest problems of socialist and authoritarian states, and 17 good-news dispatches (record
+  year, aviator, inventor, emigrants, a friendly neighbour, the games, a mild winter; ahead of the
+  plan, hero of labour, the metro, the last illiterate, the virgin lands, fraternal aid for planned
+  and socialist states; a jubilee for crowns; foreign capital for market economies; a festival for
+  anarchists and councils) plus the sys dispatch `plan_fulfilled`, queued by `endPlan`.
+- **Engine** (`sim/events.js`): `Ev.tone(def)`; every queued dispatch moves `n.a.luck` (bad +1,
+  good −1.5, decays 6% a month). The monthly draw divides bad weights by `1 + 0.9 × luck`,
+  multiplies good ones by `1.5 + 0.7 × luck`, and draws no new problem within eight months (five
+  for AI) of the last bad news (`n.a.lastBad`). Good news never stops the clock (`Ev.urgent`),
+  shows a green "Good news" tag in the tray and "GOOD NEWS" on the dispatch.
+- Result for Karsova over 30 years: about 26 problems, 21 good, 8 mixed; other countries similar.
+  AI-played historical soak: 5 wins, 4 survive, 8 fall.
+
 ## Published (end of session 2)
 
 - Playable artifact: slug `b44285db-2e8b-4266-bfe0-39315542a8b3` (https://claude.ai/artifact/PG38qVqd6iMyayLf4gaVKx), live version `1794621892-96b4` after session 6,

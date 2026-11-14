@@ -100,9 +100,19 @@
   Ev.pending = (G, id) => G.evq.some((e) => e.id === id) || (G.tray || []).some((e) => e.id === id);
   /* Ordinary dispatches wait in a tray beside the map while the game runs; urgent ones (sys, story)
      stop the clock. G.trayEvents is set by the interface from the player's settings. */
-  Ev.urgent = (def) => !!(def.sys || def.story);
+  Ev.urgent = (def) => !!((def.sys || def.story) && def.tone !== 'good'); // good news never stops the clock
+  /* Fortune: every dispatch is 'bad' (a problem), 'good' (a windfall) or 'mixed' (a dilemma).
+     Bad news raises n.a.luck, good news spends it; the monthly draw leans toward good fortune
+     while luck is high and keeps problems apart (see Ev.month). Tones are set in data/fortune.js. */
+  Ev.tone = (def) => def.tone || (def.sys && !def.story ? 'bad' : 'mixed');
+  function fortune(G, n, def) {
+    const t = Ev.tone(def);
+    if (t === 'bad') { n.a.luck = Math.min(6, (n.a.luck || 0) + 1); n.a.lastBad = G.tick; }
+    else if (t === 'good') n.a.luck = Math.max(0, (n.a.luck || 0) - 1.5);
+  }
   Ev.queue = function (G, n, id, ctx) {
     const def = Ev.def(id); if (!def) return;
+    fortune(G, n, def);
     if (n.id === G.player && !G.autoPlayer) {
       const e = { id, n: n.id, ctx: ctx || {}, t: G.tick };
       if (G.trayEvents && !Ev.urgent(def)) { (G.tray = G.tray || []).push(e); G.uiDirty = true; } else G.evq.push(e);
@@ -141,21 +151,28 @@
         const def = Ev.def(L.id); if (def && (!def.w || def.w(n, G, L.ctx) > 0 || def.always)) Ev.queue(G, n, L.id, L.ctx);
       }
     }
+    if (n.a.luck) n.a.luck *= 0.94; // hard times are forgotten in about a year
     if (n.a.evCd > 0) { n.a.evCd--; return; }
     if (!byId) index();
     const era = ID.eraOf(G.tick);
     const seen = n.a.evSeen || (n.a.evSeen = {});
     const cands = []; let tot = 0;
+    const isP = n.id === G.player, luck = n.a.luck || 0;
+    // no fresh trouble within eight months (five for AI states) of the last piece of bad news
+    const calm = n.a.lastBad != null && G.tick - n.a.lastBad < (isP ? 240 : 150);
     for (const def of ID.EVENT_DEFS) {
       if (!def.w || def.sys) continue;
       if (def.era != null && era < def.era) continue;
       if (def.once && seen[def.id]) continue;
       if (seen[def.id] && G.tick - seen[def.id] < (def.cd || 60) * 30) continue;
       let w = 0; try { w = def.w(n, G, {}) || 0; } catch (e) { w = 0; }
-      if (w > 0) { cands.push([def, w]); tot += w; }
+      if (w <= 0) continue;
+      const t = Ev.tone(def);
+      if (t === 'bad') { if (calm) continue; w /= 1 + 0.9 * luck; }
+      else if (t === 'good') w *= 1.5 + 0.7 * luck;
+      cands.push([def, w]); tot += w;
     }
     if (!tot) return;
-    const isP = n.id === G.player;
     if (!G.rng.chance(clamp(tot / (isP ? 130 : 260), 0, isP ? 0.3 : 0.15))) return;
     const pick = G.rng.weighted(cands, (c) => c[1]); if (!pick) return;
     seen[pick[0].id] = G.tick; n.a.evCd = isP ? 4 : 6;

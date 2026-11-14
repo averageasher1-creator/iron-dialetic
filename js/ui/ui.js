@@ -420,7 +420,7 @@
     const opts = ID.Events.options(G, n, def, e.ctx);
     if (!opts.length) { G.evq.shift(); return; }
     const T = (v) => esc(ID.Events.txt(v, G, n, e.ctx));
-    let h = '<div class="dlg"><div class="dhd"><div class="k">' + (def.story ? 'HISTORY' : def.sys ? 'URGENT' : 'DISPATCH') + '</div><div class="d">' + ID.dateOf(e.t).str + '</div></div>' + ID.Flags.banner(n, e.id, !!def.sys) + '<div class="dbd"><h2>' + T(def.title) + '</h2><p class="tx">' + T(def.text) + '</p>';
+    let h = '<div class="dlg"><div class="dhd"><div class="k">' + (def.story ? 'HISTORY' : def.tone === 'good' ? 'GOOD NEWS' : def.sys ? 'URGENT' : 'DISPATCH') + '</div><div class="d">' + ID.dateOf(e.t).str + '</div></div>' + ID.Flags.banner(n, e.id, !!def.sys && def.tone !== 'good') + '<div class="dbd"><h2>' + T(def.title) + '</h2><p class="tx">' + T(def.text) + '</p>';
     opts.forEach((o, k) => {
       const fx = typeof o.fx === 'function' ? [] : o.fx;
       h += '<button class="choice" data-act="choose" data-a="' + k + '"><kbd>' + (k + 1) + '</kbd><b>' + T(o.label) + (o.hist && G.historical ? ' <span class="tag hist">as it happened</span>' : '') + '</b>' + (o.tip ? '<span class="hint">' + T(o.tip) + '</span>' : '') + '<div class="fx">' + UI.fxHtml(fx, n) + '</div></button>';

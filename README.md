@@ -86,7 +86,8 @@ machine, change it in **Settings**.
 - **Flags** for every state, generated from its name and ideology, that change when the regime does.
 - **A living world**: blocs, coalitions against the leader, foreign-funded movements, general
   strikes called from abroad, revolutionary waves, a Great Slump, four eras.
-- **81 events and 47 decisions**, many with delayed consequences.
+- **98 events and 47 decisions**, many with delayed consequences. Bad news and good news are
+  balanced: after a run of trouble the dice lean toward a windfall, and problems arrive spaced out.
 - **A post-mortem when you fall** naming the faction that turned, what turned it, the last
   years of warnings and what to try next. A chronicle when the campaign ends.
 - A handcrafted scenario (*The Two Continents, 1910*), seeded random worlds in three sizes,

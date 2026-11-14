@@ -132,7 +132,7 @@
     else if (G.cut[i] === 2) h += '<br><span class="warn">Supplied by sea</span>';
     if (n === me && !G.bld[i]) h += '<br><span class="dim">Click to build here.</span>';
     else if (n && n !== me && ID.atWar(G, me.id, n.id)) h += '<br><span class="dim">Click to select; double-click to attack.</span>';
-    else if (!n) h += '<span class="dim">Double-click to expand into it.</span>';
+    else if (!n) h += '<br><span class="dim">Double-click to expand into it.</span>';
     UI.tipAt(hover.x, hover.y, h); hoverShown = true;
   }
 

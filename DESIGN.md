@@ -219,7 +219,8 @@ index.html            no build step; plain <script> tags, one global `ID`
 css/style.css         the whole interface
 fonts/                Barlow + Barlow Condensed (OFL), Special Elite (Apache 2.0)
 js/core/util.js       RNG, noise, heap, formatting, calendar
-js/data/*.js          base (terrain, laws, buildings...), ideologies, names + scenario, events + decisions,
+js/data/*.js          base (terrain, laws, buildings...), ideologies, names + scenario, events + decisions, fortune
+                      (tone of each dispatch, good-news dispatches),
                       focus (programme trees and the historical storyline), destiny (identity, destinies,
                       family trees), expand (emergency measures, home-front branches)
 js/sim/*.js           mapgen, world, combat, economy, politics, diplomacy, events, focus (programmes and
